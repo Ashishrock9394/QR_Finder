@@ -1,0 +1,86 @@
+// resources/js/components/App.jsx
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // Import useAuth
+import Navbar from './Layout/Navbar';
+import Homepage from './Home/Homepage';
+import About from './Home/About';
+import Contact from './Home/Contact';
+import Login from './Auth/Login';
+import OTPLogin from './Auth/OTPLogin';
+import Register from './Auth/Register';
+import Dashboard from './Agent/Dashboard';
+import IssueQR from './Agent/IssueQR';
+import AdminPanel from './Admin/AdminPanel';
+import UserProfile from './User/UserProfile';
+import MyItems from './User/MyItems';
+
+const App = () => {
+    const { user, loading } = useAuth(); // Use the hook here
+
+    if (loading) {
+        return (
+            <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        );
+    }
+
+    const ProtectedRoute = ({ children, roles = [] }) => {
+        if (!user) return <Navigate to="/login" />;
+        if (roles.length > 0 && !roles.includes(user.role)) {
+            return <Navigate to="/" />;
+        }
+        return children;
+    };
+
+    return (
+        <div>
+            <Navbar />
+            <Routes>
+                <Route path="/" element={<Homepage />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+                <Route path="/login/otp" element={!user ? <OTPLogin /> : <Navigate to="/dashboard" />} />
+                <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
+                
+                <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                        <Dashboard />
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/issue-qr" element={
+                    <ProtectedRoute roles={['agent', 'admin']}>
+                        <IssueQR />
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/admin" element={
+                    <ProtectedRoute roles={['admin']}>
+                        <AdminPanel />
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/profile" element={
+                    <ProtectedRoute>
+                        <UserProfile />
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/my-items" element={
+                    <ProtectedRoute>
+                        <MyItems />
+                    </ProtectedRoute>
+                } />
+
+                <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+        </div>
+    );
+};
+
+export default App;

@@ -1,0 +1,9 @@
+.btn-primary, .bg-primary {
+    background-color: #b34e75 !important;
+    border: none;
+}
+.btn-primary:hover {
+    background-color: #b34e75 !important;
+    border: none;
+    cursor: pointer;
+}
