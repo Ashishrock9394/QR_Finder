@@ -14,6 +14,8 @@ import IssueQR from './Agent/IssueQR';
 import AdminPanel from './Admin/AdminPanel';
 import UserProfile from './User/UserProfile';
 import MyItems from './User/MyItems';
+import MyCard from './User/MyCard';
+import CardDetailPage from './Home/CardDetailPage';
 
 const App = () => {
     const { user, loading } = useAuth(); // Use the hook here
@@ -46,7 +48,7 @@ const App = () => {
                 <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
                 <Route path="/login/otp" element={!user ? <OTPLogin /> : <Navigate to="/dashboard" />} />
                 <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
-                
+                <Route path="/v-cards/:id" element={<CardDetailPage />} />
                 <Route path="/dashboard" element={
                     <ProtectedRoute>
                         <Dashboard />
@@ -74,6 +76,11 @@ const App = () => {
                 <Route path="/my-items" element={
                     <ProtectedRoute>
                         <MyItems />
+                    </ProtectedRoute>
+                } />
+                <Route path="/my-card" element={
+                    <ProtectedRoute>
+                        <MyCard />
                     </ProtectedRoute>
                 } />
 

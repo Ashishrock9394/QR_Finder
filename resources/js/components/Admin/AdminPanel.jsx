@@ -23,10 +23,12 @@ const AdminPanel = () => {
         const qrsPerPage = 30;
         const cols = 5;
         const rows = 6;
+        // const url = "https://github.com/Ashishrock9394";
 
         for (let i = 0; i < qrCodeCount; i++) {
             const qrId = `QR${Date.now()}${Math.random().toString(36).substring(2, 15)}`;
             const qrBase64 = await QRCode.toDataURL(qrId, { width: 100 });
+            // const qrBase64 = await QRCode.toDataURL(url, { width: 100 });
 
             const indexOnPage = i % qrsPerPage;
 

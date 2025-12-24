@@ -147,22 +147,38 @@ const Navbar = () => {
 
                         {/* Admin Links */}
                         {user && user.role === 'admin' && (
-                            <li className="nav-item">
-                                <Link className="nav-link" to="/admin">
-                                    <i className="bi bi-shield-lock me-1"></i>
-                                    Admin Panel
-                                </Link>
-                            </li>
+                            <>
+                                <li className="nav-item">
+                                    <Link className="nav-link" to="/admin">
+                                        <i className="bi bi-shield-lock me-1"></i>
+                                        Admin Panel
+                                    </Link>
+                                </li>
+                            </>                            
                         )}
 
                         {/* User Links */}
                         {user && user.role === 'user' && (
+                            <>
+                            <li className="nav-item">
+                                <Link className="nav-link" to="/dashboard">
+                                    <i className="bi bi-speedometer2 me-1"></i>
+                                    Dashboard
+                                </Link>
+                            </li>
                             <li className="nav-item">
                                 <Link className="nav-link" to="/my-items">
                                     <i className="bi bi-grid me-1"></i>
                                     My Items
                                 </Link>
                             </li>
+                            <li className="nav-item">
+                                <Link className="nav-link" to="/my-card">
+                                    <i className="bi bi-person-vcard me-1"></i>
+                                    My Card
+                                </Link>
+                            </li>
+                            </>                            
                         )}
                     </ul>
 
