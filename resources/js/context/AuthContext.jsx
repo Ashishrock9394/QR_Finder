@@ -1,3 +1,4 @@
+// resources/js/context/AuthContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 
@@ -41,13 +42,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (data) => {
         const res = await axios.post('/api/register', data);
-        const { token, user } = res.data;
-
-        localStorage.setItem('token', token);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        setUser(user);
-
-        return user;
+        return res.data;
     };
 
     const logout = async () => {

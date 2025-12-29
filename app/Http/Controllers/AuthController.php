@@ -24,21 +24,25 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $status = ($request->role === 'agent') ? 'pending' : 'active';
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
             'mobile' => $request->mobile,
-            'status' => 'pending',
+            'status' => $status,
         ]);
 
-        $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
-            'token' => $token
+            'success' => true,
+            'message' => $request->role === 'agent'
+                ? 'Registration successful! Your agent account is pending approval.'
+                : 'Registration successful! Your account is now active.'
         ], 201);
+
     }
 
     public function login(Request $request)
