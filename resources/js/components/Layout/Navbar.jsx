@@ -194,7 +194,7 @@ const Navbar = () => {
                                         placeholder="Search..." 
                                         value={searchTerm} id="searchContent"
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        style={{ width: '200px' }}
+                                        style={{ width: '150px' }}
                                     />
                                     <button className="btn btn-outline-light" type="submit">
                                         <i className="bi bi-search"></i>
