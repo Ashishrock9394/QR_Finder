@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import Swal from 'sweetalert2';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -9,25 +10,20 @@ const Register = () => {
         email: '',
         password: '',
         password_confirmation: '',
-        role: 'agent',
+        role: 'user',
         mobile: ''
     });
+
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
-    const { register } = useAuth(); // Use the useAuth hook here
+    const { register } = useAuth();
     const navigate = useNavigate();
 
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-        // Clear errors when user starts typing
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+
         if (errors[e.target.name]) {
-            setErrors({
-                ...errors,
-                [e.target.name]: ''
-            });
+            setErrors({ ...errors, [e.target.name]: '' });
         }
     };
 
@@ -37,13 +33,26 @@ const Register = () => {
         setErrors({});
 
         try {
-            await register(formData);
-            navigate('/dashboard');
+            const response = await register(formData);
+            Swal.fire({
+                icon: 'success',
+                title: 'Registration Successful',
+                text: response.message,
+                confirmButtonText: 'OK',
+                allowOutsideClick: false
+            }).then(() => {
+                navigate('/login');
+            });
+
         } catch (error) {
             if (error.response?.data?.errors) {
                 setErrors(error.response.data.errors);
             } else {
-                setErrors({ general: 'Registration failed. Please try again.' });
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Registration Failed',
+                    text: 'Something went wrong. Please try again.'
+                });
             }
         } finally {
             setLoading(false);
@@ -56,138 +65,120 @@ const Register = () => {
                 <div className="col-md-8 col-lg-6">
                     <div className="card shadow border-0">
                         <div className="card-body p-5">
+
                             <div className="text-center mb-4">
-                                <h3 className="card-title fw-bold">Create Account</h3>
+                                <h3 className="fw-bold">Create Account</h3>
                                 <p className="text-muted">Join QR Finder today</p>
                             </div>
 
-                            {errors.general && (
-                                <div className="alert alert-danger mb-4">
-                                    {errors.general}
-                                </div>
-                            )}
-
                             <form onSubmit={handleSubmit}>
                                 <div className="row">
-                                    <div className="col-md-6">
-                                        <div className="mb-3">
-                                            <label className="form-label">Full Name</label>
-                                            <input 
-                                                type="text" 
-                                                className={`form-control ${errors.name ? 'is-invalid' : ''}`}
-                                                name="name"
-                                                value={formData.name}
-                                                onChange={handleChange}
-                                                required 
-                                            />
-                                            {errors.name && <div className="invalid-feedback">{errors.name[0]}</div>}
-                                        </div>
+                                    <div className="col-md-6 mb-3">
+                                        <label className="form-label">Full Name</label>
+                                        <input
+                                            type="text"
+                                            name="name"
+                                            className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                            value={formData.name}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                        {errors.name && <div className="invalid-feedback">{errors.name[0]}</div>}
                                     </div>
-                                    <div className="col-md-6">
-                                        <div className="mb-3">
-                                            <label className="form-label">Mobile Number</label>
-                                            <input 
-                                                type="tel" 
-                                                className="form-control"
-                                                name="mobile"
-                                                value={formData.mobile}
-                                                onChange={handleChange}
-                                                required 
-                                            />
-                                        </div>
+
+                                    <div className="col-md-6 mb-3">
+                                        <label className="form-label">Mobile</label>
+                                        <input
+                                            type="text"
+                                            name="mobile"
+                                            className="form-control"
+                                            value={formData.mobile}
+                                            onChange={handleChange}
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="mb-3">
-                                    <label className="form-label">Email Address</label>
-                                    <input 
-                                        type="email" 
-                                        className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                    <label className="form-label">Email</label>
+                                    <input
+                                        type="email"
                                         name="email"
+                                        className={`form-control ${errors.email ? 'is-invalid' : ''}`}
                                         value={formData.email}
                                         onChange={handleChange}
-                                        required 
+                                        required
                                     />
                                     {errors.email && <div className="invalid-feedback">{errors.email[0]}</div>}
                                 </div>
 
                                 <div className="row">
-                                    <div className="col-md-6">
-                                        <div className="mb-3">
-                                            <label className="form-label">Password</label>
-                                            <input 
-                                                type="password" 
-                                                className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-                                                name="password"
-                                                value={formData.password}
-                                                onChange={handleChange}
-                                                required 
-                                            />
-                                            {errors.password && <div className="invalid-feedback">{errors.password[0]}</div>}
-                                        </div>
+                                    <div className="col-md-6 mb-3">
+                                        <label className="form-label">Password</label>
+                                        <input
+                                            type="password"
+                                            name="password"
+                                            className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                        {errors.password && <div className="invalid-feedback">{errors.password[0]}</div>}
                                     </div>
-                                    <div className="col-md-6">
-                                        <div className="mb-3">
-                                            <label className="form-label">Confirm Password</label>
-                                            <input 
-                                                type="password" 
-                                                className="form-control"
-                                                name="password_confirmation"
-                                                value={formData.password_confirmation}
-                                                onChange={handleChange}
-                                                required 
-                                            />
-                                        </div>
+
+                                    <div className="col-md-6 mb-3">
+                                        <label className="form-label">Confirm Password</label>
+                                        <input
+                                            type="password"
+                                            name="password_confirmation"
+                                            className="form-control"
+                                            value={formData.password_confirmation}
+                                            onChange={handleChange}
+                                            required
+                                        />
                                     </div>
                                 </div>
 
                                 <div className="mb-4">
                                     <label className="form-label">Account Type</label>
-                                    <div>
-                                        <div className="form-check form-check-inline">
-                                            <input 
-                                                className="form-check-input"
+                                    <div className="d-flex gap-4">
+                                        <div className="form-check">
+                                            <input
                                                 type="radio"
                                                 name="role"
-                                                id="roleAgent"
+                                                value="user"
+                                                checked={formData.role === 'user'}
+                                                onChange={handleChange}
+                                                className="form-check-input"
+                                            />
+                                            <label className="form-check-label">User</label>
+                                        </div>
+
+                                        <div className="form-check">
+                                            <input
+                                                type="radio"
+                                                name="role"
                                                 value="agent"
                                                 checked={formData.role === 'agent'}
                                                 onChange={handleChange}
+                                                className="form-check-input"
                                             />
-                                            <label className="form-check-label" htmlFor="roleAgent">
-                                                QR Agent
-                                            </label>
+                                            <label className="form-check-label">QR Agent</label>
                                         </div>
                                     </div>
-                                    <small className="form-text text-muted">
-                                        {formData.role === 'agent' 
-                                            ? 'Agents can issue QR codes and help recover items' 
-                                            : 'Users can register items and receive notifications'
-                                        }
-                                    </small>
                                 </div>
 
-                                <button 
-                                    type="submit" 
-                                    className="btn btn-primary w-100 py-2"
-                                    disabled={loading}
-                                >
-                                    {loading ? (
-                                        <>
-                                            <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Creating Account...
-                                        </>
-                                    ) : (
-                                        'Create Account'
-                                    )}
+                                <button className="btn btn-primary w-100" disabled={loading}>
+                                    {loading ? 'Creating Account...' : 'Create Account'}
                                 </button>
                             </form>
 
                             <div className="text-center mt-4">
-                                <p className="mb-0">
-                                    Already have an account? <Link to="/login" className="text-decoration-none">Sign in</Link>
+                                <p>
+                                    Already have an account?
+                                    <Link to="/login" className="ms-1">Login</Link>
                                 </p>
                             </div>
+
                         </div>
                     </div>
                 </div>
