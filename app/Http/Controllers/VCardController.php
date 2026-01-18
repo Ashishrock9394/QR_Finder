@@ -21,10 +21,10 @@ class VCardController extends Controller
     }
 
     // Show single card
-    public function show($id)
+    public function show($qr_code)
     {   
         // dd($request->all());
-        $card = VCard::findOrFail($id);
+        $card = VCard::where('qr_code', $qr_code)->firstOrFail();
         return response()->json($card);
     }
 
@@ -50,7 +50,7 @@ class VCardController extends Controller
 
         QrCode::size(300)
             ->format('svg')
-            ->generate(url("/v-cards/{$card->id}"), storage_path("app/public/{$qrFileName}"));
+            ->generate(url("/v-cards/{$qrCode}"), storage_path("app/public/{$qrFileName}"));
 
         return response()->json($card, 201);
     }
@@ -89,7 +89,7 @@ class VCardController extends Controller
 
         QrCode::size(300)
             ->format('svg')
-            ->generate(url("/v-cards/{$card->id}"), storage_path("app/public/{$qrFileName}"));
+            ->generate(url("/v-cards/{$qrCode}"), storage_path("app/public/{$qrFileName}"));
 
         // Delete old QR file if exists
         if ($card->qr_image && Storage::disk('public')->exists($card->qr_image)) {

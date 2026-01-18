@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import Loader from '../Layout/Loader';
 
 const MyCard = () => {
     const [cards, setCards] = useState([]);
@@ -145,13 +146,9 @@ const MyCard = () => {
         }
     };
 
-    if (loading) return (
-        <div className="container mt-4 text-center">
-        <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-        </div>
-        </div>
-    );
+    if (loading){
+        return <Loader />
+    }
 
     return (
         <div className="container mt-4">
@@ -434,72 +431,125 @@ const MyCard = () => {
                         onClick={() => setSelectedCard(null)}
                     ></button>
                     </div>
-                    <div id="card-to-download" className="modal-body" style={{backgroundColor: 'white', padding: '50px'}}>
                     <div
+                        id="card-to-download"
+                        className="modal-body my-2"
                         style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '1.5rem',
-                        flexWrap: 'wrap',
+                            width: '700px',
+                            height: '400px',
+                            boxShadow: '0 6px 15px rgba(0,0,0,0.1)',
+                            borderRadius: '12px',
+                            overflow: 'hidden',
+                            margin: 'auto',
+                            fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                            userSelect: 'none',
+                            cursor: 'default',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            border: '1px solid #ddd',
                         }}
                     >
-                        {/* Center: Personal & Company Info */}
-                        <div style={{ flex: '1 1 auto', minWidth: '200px' }}>
-                        {selectedCard.logo ? (
-                            <img
-                            src={`/storage/${selectedCard.logo}`}
-                            alt="Logo" className="mb-4"
-                            style={{ maxWidth: '250px', maxHeight: '250px', objectFit: 'contain' }}
-                            />
-                        ) : (
-                            <div
+                        {/* Top section: brown background */}
+                        <div
                             style={{
-                                width: '120px',
+                                backgroundColor: '#a87e69', // brown color
                                 height: '120px',
-                                backgroundColor: '#fff',
+                                padding: '1rem 2rem',
+                                color: 'white',
+                                fontWeight: '700',
+                                fontSize: '1.7rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '1rem',
                             }}
-                            />
-                        )}
-                        <p style={{ fontWeight: '700', fontSize: '1.25rem', marginBottom: '0.3rem' }}>
-                            {selectedCard.name}
-                        </p>
-                        <p style={{  margin: '0 0 0.3rem 0', fontWeight: '400', fontStyle: 'italic', color: '#555' }}>
-                            {selectedCard.designation || 'N/A'}
-                        </p>                        
-                        <p style={{ fontWeight: '700', fontSize: '1.25rem', marginBottom: '0.3rem' }}>
-                            {selectedCard.company_name || 'N/A'}
-                        </p>
-                        
-                        <p style={{ margin: '0.1rem 0' }}>
-                            <strong>Contact:</strong> {selectedCard.mobile}, {selectedCard.email}, {selectedCard.website}
-                        </p>
-                        {selectedCard.address && (
-                            <p style={{ margin: '0.1rem 0', color: '#444' }}>
-                            <strong>Address:</strong> {selectedCard.address}
-                            </p>
-                        )}
+                        >
+                            {/* Logo or placeholder */}
+                            {selectedCard.logo ? (
+                                <img
+                                    src={`/storage/${selectedCard.logo}`}
+                                    alt="Logo"
+                                    style={{
+                                        height: '90px',
+                                        width: 'auto',
+                                        borderRadius: '8px',
+                                        objectFit: 'contain',
+                                    }}
+                                />
+                            ) : (
+                                <div style={{ height: '90px', width: '90px' }} />
+                            )}
+                            <div>{selectedCard.company_name || 'Your Company'}</div>
                         </div>
 
-                        {/* Right: QR Code */}
-                        <div style={{ flex: '0 0 140px', textAlign: 'center' }}>
-                        {selectedCard.qr_image ? (
-                            <img
-                            src={`/storage/${selectedCard.qr_image}`}
-                            alt="QR Code"
-                            style={{ width: '140px', height: '140px', objectFit: 'contain' }}
-                            />
-                        ) : (
-                            <div
+                        {/* Bottom section: white background with info & QR */}
+                        <div
                             style={{
-                                width: '140px',
-                                height: '140px',
-                                backgroundColor: '#eee',
+                                flexGrow: 1,
+                                backgroundColor: 'white',
+                                padding: '2rem 3rem',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
                             }}
-                            />
-                        )}
+                        >
+                            {/* Left info */}
+                            <div style={{ maxWidth: '60%' }}>
+                                <p style={{ margin: 0, fontWeight: '700', fontSize: '1.5rem', color: '#333' }}>
+                                    {selectedCard.name}
+                                </p>
+                                <p style={{ margin: '4px 0 12px', fontWeight: '500', fontStyle: 'italic', color: '#666' }}>
+                                    {selectedCard.designation || 'N/A'}
+                                </p>
+
+                                <p style={{ margin: '6px 0', color: '#555', fontSize: '0.9rem' }}>
+                                    <strong>Contact:</strong> {selectedCard.mobile || 'N/A'}
+                                </p>
+                                <p style={{ margin: '6px 0', color: '#555', fontSize: '0.9rem' }}>
+                                    <strong>Email:</strong> {selectedCard.email || 'N/A'}
+                                </p>
+                                <p style={{ margin: '6px 0', color: '#555', fontSize: '0.9rem' }}>
+                                    <strong>Website:</strong> {selectedCard.website || 'N/A'}
+                                </p>
+
+                                {selectedCard.address && (
+                                    <p style={{ margin: '6px 0', color: '#555', fontSize: '0.9rem' }}>
+                                        <strong>Address:</strong> {selectedCard.address}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Right QR code */}
+                            <div
+                                style={{
+                                    textAlign: 'center',
+                                    width: '160px',
+                                    position: 'relative',
+                                }}
+                            >
+                                {selectedCard.qr_image ? (
+                                    <img
+                                        src={`/storage/${selectedCard.qr_image}`}
+                                        alt="QR Code"
+                                        style={{
+                                            width: '140px',
+                                            height: '140px',
+                                            objectFit: 'contain',
+                                        }}
+                                    />
+                                ) : (
+                                    <div
+                                        style={{
+                                            width: '140px',
+                                            height: '140px',
+                                            backgroundColor: '#f0f0f0',
+                                            borderRadius: '8px',
+                                        }}
+                                    />
+                                )}
+                            </div>
                         </div>
                     </div>
-                    </div>
+
                     <div className="modal-footer">
                         <button
                             type="button"

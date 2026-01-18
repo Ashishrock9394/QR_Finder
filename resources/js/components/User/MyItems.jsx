@@ -1,6 +1,7 @@
 // resources/js/components/User/MyItems.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Loader from '../Layout/Loader';
 
 const MyItems = () => {
     const [items, setItems] = useState([]);
@@ -33,16 +34,8 @@ const MyItems = () => {
         return <span className={`badge ${config.class}`}>{config.text}</span>;
     };
 
-    if (loading) {
-        return (
-            <div className="container mt-4">
-                <div className="d-flex justify-content-center">
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </div>
-                </div>
-            </div>
-        );
+    if (loading){
+        return <Loader />
     }
 
     return (

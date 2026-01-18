@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
+import Loader from '../Layout/Loader';
 
 const UserProfile = () => {
     const { user } = useAuth();

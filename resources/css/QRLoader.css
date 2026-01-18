@@ -1,0 +1,87 @@
+/* Full screen white background */
+.qr-loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #fff;
+  color: #000;
+}
+
+/* QR code container */
+.qr-scanner {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-gap: 8px;
+}
+
+/* QR finder squares with gradient */
+.qr-box {
+  width: 30px;
+  height: 30px;
+  background: radial-gradient(circle, rgba(153,104,123,1) 0%, rgba(89,100,117,1) 100%);
+  border-radius: 4px;
+}
+
+.qr-box.top-left { grid-column: 1; grid-row: 1; }
+.qr-box.top-right { grid-column: 4; grid-row: 1; }
+.qr-box.bottom-left { grid-column: 1; grid-row: 4; }
+
+/* QR inner dots */
+.qr-dots {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  grid-gap: 8px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.qr-dot {
+  background: radial-gradient(circle, rgba(153,104,123,1) 0%, rgba(89,100,117,1) 100%);
+  border-radius: 2px;
+  opacity: 0.4;
+  animation: fade 1.5s infinite alternate;
+}
+
+.qr-dot:nth-child(odd) { animation-delay: 0s; }
+.qr-dot:nth-child(even) { animation-delay: 0.5s; }
+
+@keyframes fade {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+/* Scanner line animation */
+.scanner-line {
+  position: absolute;
+  width: 100%;
+  height: 4px;
+  background: rgba(153,104,123,0.8);
+  top: 0;
+  left: 0;
+  animation: scan 1.5s infinite;
+  border-radius: 2px;
+}
+
+@keyframes scan {
+  0% { top: 0; }
+  100% { top: 100%; }
+}
+
+/* Loading text */
+.loading-text {
+  margin-top: 20px;
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: rgba(89,100,117,1);
+}

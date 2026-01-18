@@ -1,7 +1,7 @@
 // resources/js/components/Agent/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import Footer from '../Layout/Footer';
+import Loader from '../Layout/Loader';
 import { useAuth } from '../../context/AuthContext'; // Import useAuth hook
 
 const Dashboard = () => {
@@ -31,15 +31,7 @@ const Dashboard = () => {
     };
 
     if (loading) {
-        return (
-            <div className="container mt-4">
-                <div className="d-flex justify-content-center">
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </div>
-                </div>
-            </div>
-        );
+        return <Loader />;
     }
 
     const statCards = user?.role === 'admin' ? [

@@ -1,6 +1,7 @@
 // resources/js/components/Agent/IssueQR.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
+import Loader from '../Layout/Loader';
 
 const IssueQR = () => {
     const [formData, setFormData] = useState({

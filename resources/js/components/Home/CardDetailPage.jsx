@@ -1,12 +1,13 @@
+// resources/js/components/Home/CardDetailPage.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import Loader from '../Layout/Loader';
 
 const CardDetailPage = () => {
-    const { id } = useParams(); // Get card ID from route
-    console.log('Card ID:', id);
+    const { id } = useParams();
     const navigate = useNavigate();
 
     const [card, setCard] = useState(null);
@@ -23,7 +24,7 @@ const CardDetailPage = () => {
         } catch (error) {
             console.error('Error fetching card:', error);
             alert('Card not found or you do not have access.');
-            navigate('/my-cards'); // redirect if error
+            navigate('/my-cards');
         } finally {
             setLoading(false);
         }
@@ -45,80 +46,152 @@ const CardDetailPage = () => {
         });
     };
 
-    if (loading) return (
-        <div className="container mt-4 text-center">
-            <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
-            </div>
-        </div>
-    );
+    if (loading) return <Loader />;
+
+    // Icons using Bootstrap Icons (or substitute with your icons)
+    const iconStyle = { marginRight: '8px', color: '#555' };
 
     return (
-        <div className="container mt-4">
+        <div className="container mt-4 mb-4">
             <button className="btn btn-secondary mb-3" onClick={() => navigate(-1)}>
                 &larr; Back
             </button>
 
-            <div id="card-to-download" style={{
-                backgroundColor: 'white', padding: '50px', maxWidth: '800px', margin: 'auto',
-                border: '1px solid #ddd', borderRadius: '10px', boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-            }}>
-                <div style={{
-                    display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap',
-                    justifyContent: 'space-between'
-                }}>
-                    {/* Left: Logo & Info */}
-                    <div style={{ flex: '1 1 auto', minWidth: '250px' }}>
-                        {card.logo ? (
-                            <img
+            <div
+                id="card-to-download"
+                style={{
+                    width: '700px',
+                    height: '400px',
+                    boxShadow: '0 6px 15px rgba(0,0,0,0.1)',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    margin: 'auto',
+                    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                    userSelect: 'none',
+                    cursor: 'default',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    border: '1px solid #ddd',
+                }}
+            >
+                {/* Top section: brown background */}
+                <div
+                    style={{
+                        backgroundColor: '#a87e69', // brown color
+                        height: '120px',
+                        padding: '1rem 2rem',
+                        color: 'white',
+                        fontWeight: '700',
+                        fontSize: '1.7rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1rem',
+                    }}
+                >
+                    {/* Logo or company name */}
+                    {card.logo ? (
+                        <img
                             src={`/storage/${card.logo}`}
-                            alt="Logo" className="mb-4"
-                            style={{ maxWidth: '250px', maxHeight: '250px', objectFit: 'contain' }}
-                            />
-                        ) : (
-                            <div
+                            alt="Logo"
                             style={{
-                                width: '120px',
-                                height: '120px',
-                                backgroundColor: '#fff',
+                                height: '90px',
+                                width: 'auto',
+                                borderRadius: '8px',
+                                objectFit: 'contain',
                             }}
-                            />
-                        )}
-                        <p style={{ fontWeight: '700', fontSize: '1.25rem', marginBottom: '0.05rem' }}>
+                        />
+                    ) : (
+                        <div
+                            style={{
+                                height: '90px',
+                                width: '90px',
+                            }}
+                        />
+                    )}
+                    <div>{card.company_name || 'Your Company'}</div>
+                </div>
+
+                {/* Bottom section: white background with info & QR */}
+                <div
+                    style={{
+                        flexGrow: 1,
+                        backgroundColor: 'white',
+                        padding: '2rem 3rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                    }}
+                >
+                    {/* Left info */}
+                    <div style={{ maxWidth: '60%' }}>
+                        <p style={{ margin: '0', fontWeight: '700', fontSize: '1.5rem', color: '#333' }}>
                             {card.name}
                         </p>
-                        <p style={{  margin: '0 0 0.3rem 0', fontWeight: '400', fontStyle: 'italic', color: '#555' }}>
+                        <p style={{ margin: '4px 0 12px', fontWeight: '500', fontStyle: 'italic', color: '#666' }}>
                             {card.designation || 'N/A'}
-                        </p>                        
-                        <p style={{ fontWeight: '700', fontSize: '1.25rem', marginBottom: '0.3rem' }}>
-                            {card.company_name || 'N/A'}
                         </p>
-                        <p style={{ margin: '0.1rem 0' }}>
-                            <strong>Contact:</strong> {card.mobile}, {card.email}, {card.website}
+
+                        {/* Contact details */}
+                        <p style={{ margin: '6px 0', color: '#555', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>
+                            <i className="bi bi-telephone-fill" style={iconStyle}></i> {card.mobile || 'N/A'}
                         </p>
+                        <p style={{ margin: '6px 0', color: '#555', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>
+                            <i className="bi bi-envelope-fill" style={iconStyle}></i> {card.email || 'N/A'}
+                        </p>
+                        <p style={{ margin: '6px 0', color: '#555', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>
+                            <i className="bi bi-globe" style={iconStyle}></i> {card.website || 'N/A'}
+                        </p>
+
                         {card.address && (
-                            <p style={{ margin: '0.1rem 0', color: '#444' }}>
-                                <strong>Address:</strong> {card.address}
+                            <p style={{ margin: '6px 0', color: '#555', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>
+                                <i className="bi bi-geo-alt-fill" style={iconStyle}></i> {card.address}
                             </p>
                         )}
                     </div>
 
-                    {/* Right: QR */}
-                    <div style={{ flex: '0 0 140px', textAlign: 'center' }}>
+                    {/* Right QR code */}
+                    <div
+                        style={{
+                            textAlign: 'center',
+                            width: '160px',
+                            position: 'relative',
+                        }}
+                    >
                         {card.qr_image ? (
                             <img
                                 src={`/storage/${card.qr_image}`}
                                 alt="QR Code"
-                                style={{ width: '140px', height: '140px', objectFit: 'contain' }}
+                                style={{
+                                    width: '140px',
+                                    height: '140px',
+                                    objectFit: 'contain',
+                                }}
                             />
                         ) : (
-                            <div style={{ width: '140px', height: '140px', backgroundColor: '#eee' }} />
+                            <div
+                                style={{
+                                    width: '140px',
+                                    height: '140px',
+                                    backgroundColor: '#f0f0f0',
+                                    borderRadius: '8px',
+                                }}
+                            />
                         )}
+                        <div
+                            style={{
+                                marginTop: '8px',
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                color: '#a87e69',
+                                userSelect: 'none',
+                            }}
+                        >
+                        </div>
                     </div>
                 </div>
-                
             </div>
 
+            {/* Download button */}
             <div className="d-flex justify-content-center mt-3 gap-2">
                 <button className="btn btn-success" onClick={downloadCardPDF}>
                     <i className="bi bi-download me-1"></i> Download Card
