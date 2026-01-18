@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\QRCode;
+use App\Models\VCard;
 use App\Models\User;
 use App\Models\Review;
 use Illuminate\Http\Request;
@@ -17,10 +18,12 @@ class DashboardController extends Controller
         if ($user->isAdmin()) {
             $stats = [
                 'total_qr_codes' => QRCode::count(),
+                'total_v_cards' => VCard::count(),
+                'total_agents' => User::where('role', 'agent')->count(),
+                'active_agents' => User::where('role', 'agent')->where('status', 'active')->count(),
+                'total_users' => User::where('role', 'user')->count(),
                 'active_items' => QRCode::where('status', 'active')->count(),
                 'found_items' => QRCode::where('status', 'found')->count(),
-                'total_agents' => User::where('role', 'agent')->count(),
-                'total_users' => User::where('role', 'user')->count(),
                 'happy_customers' => Review::where('is_approved', true)->count(),
                 'recovery_rate' => QRCode::count() > 0 ? 
                     round((QRCode::where('status', 'found')->count() / QRCode::count()) * 100, 2) : 0,

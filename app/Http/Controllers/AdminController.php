@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\QRCode;
+use App\Models\VCard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -12,15 +13,19 @@ class AdminController extends Controller
     public function stats()
     {
         $total_qr_codes = QRCode::count();
-        $total_agents = User::where('role', 'agent')->where('status', 'active')->count();
-        $total_users = User::where('role', 'user')->where('status', 'active')->count();
+        $total_vCards = VCard::count();
+        $total_agents = User::where('role', 'agent')->count();
+        $active_agents = User::where('role', 'agent')->where('status', 'active')->count();
+        $total_users = User::where('role', 'user')->count();
 
         $found_items = QRCode::where('status', 'found')->count();
         $recovery_rate = $total_qr_codes > 0 ? round(($found_items / $total_qr_codes) * 100, 2) : 0;
 
         return response()->json([
             'total_qr_codes' => $total_qr_codes,
+            'total_v_cards' => $total_vCards,
             'total_agents' => $total_agents,
+            'active_agents' => $active_agents,
             'total_users' => $total_users,
             'found_items' => $found_items,
             'recovery_rate' => $recovery_rate,

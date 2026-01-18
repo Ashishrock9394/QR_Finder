@@ -200,46 +200,46 @@ const MyCard = () => {
                             />
                         )}
                         <div className="card-body">
-                            {/* Name */}
-                            <h5 className="card-title">{card.name}</h5>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                                {/* LEFT: Name & Designation */}
+                                <div style={{ flex: '1 1 auto', minWidth: '200px' }}>
+                                    <h5 className="card-title mb-1">{card.name}</h5>
+                                    {card.designation && (
+                                        <p className="text-muted mb-2">{card.designation}</p>
+                                    )}
+                                    {card.company_name && (
+                                        <strong className="d-block text-dark mt-2 mb-1">{card.company_name}</strong>
+                                    )}
+                                </div>
 
-                            {/* Designation */}
-                            {card.designation && (
-                                <p className="text-muted">{card.designation}</p>
-                            )}
+                                {/* RIGHT: Photo & Logo */}
+                                <div style={{ flex: '0 0 auto', textAlign: 'center', marginLeft: '1rem' }}>
+                                    {card.photo && (
+                                        <img
+                                            src={`/storage/${card.photo}`}
+                                            alt="Photo"
+                                            style={{ maxHeight: '80px', borderRadius: '50%', display: 'block', marginBottom: '0.5rem' }}
+                                        />
+                                    )}
+                                </div>
+                            </div>
 
-                            {/* Company Name */}
-                            {card.company_name && (
-                                <strong className="d-block text-dark mb-2">
-                                    {card.company_name}
-                                </strong>
-                            )}
-
-                            {/* Contact Information */}
-                            <p className="mb-1">
-                                <strong>Mobile:</strong> {card.mobile}
-                            </p>
-                            <p className="mb-1">
-                                <strong>Email:</strong> <a href={`mailto:${card.email}`}>{card.email}</a>
-                            </p>
-
-                            {/* Website */}
+                            {/* Optional: Company / Contact Info below flex row */}
+                            
+                            <p className="mb-1"><strong>Mobile: </strong>{card.mobile}</p>
+                            <p className="mb-1"><strong>Email: </strong><a href={`mailto:${card.email}`}>{card.email}</a></p>
                             {card.website && (
                                 <p className="mb-1">
-                                    <strong>Website:</strong> 
-                                    <a href={card.website} target="_blank" rel="noopener noreferrer" className="text-primary">
-                                        {card.website}
-                                    </a>
+                                    <strong>Website: </strong>
+                                    <a href={card.website} target="_blank" rel="noopener noreferrer" className="text-primary">{card.website}</a>
                                 </p>
                             )}
-
-                            {/* Address */}
                             {card.address && (
-                                <p className="mb-1">
-                                    <strong>Address:</strong> {card.address}
-                                </p>
+                                <p className="mb-1"><strong>Address: </strong>{card.address}</p>
                             )}
                         </div>
+
+
 
                         {/* Card Footer with Buttons */}
                         <div className="card-footer bg-transparent d-flex justify-content-between gap-2">
@@ -279,49 +279,139 @@ const MyCard = () => {
                 </div>
                 <div className="modal-body">
                     <form onSubmit={handleSubmit} encType="multipart/form-data">
-                    <div className="mb-3">
-                        <label className="form-label">Name *</label>
-                        <input type="text" className="form-control" name="name" value={formData.name} onChange={handleInputChange} required />
-                    </div>
-                    <div className="mb-3">
-                        <label className="form-label">Designation / Title</label>
-                        <input type="text" className="form-control" name="designation" value={formData.designation} onChange={handleInputChange} />
-                    </div>
-                    <div className="mb-3">
-                        <label className="form-label">Company Name</label>
-                        <input type="text" className="form-control" name="company_name" value={formData.company_name} onChange={handleInputChange} />
-                    </div>
-                    <div className="mb-3">
-                        <label className="form-label">Mobile *</label>
-                        <input type="text" className="form-control" name="mobile" value={formData.mobile} onChange={handleInputChange} required />
-                    </div>
-                    <div className="mb-3">
-                        <label className="form-label">Email *</label>
-                        <input type="email" className="form-control" name="email" value={formData.email} onChange={handleInputChange} required />
-                    </div>
-                    <div className="mb-3">
-                        <label className="form-label">Website</label>
-                        <input type="text" className="form-control" name="website" value={formData.website} onChange={handleInputChange} />
-                    </div>
-                    <div className="mb-3">
-                        <label className="form-label">Address</label>
-                        <textarea className="form-control" name="address" value={formData.address} onChange={handleInputChange}></textarea>
-                    </div>
-                    <div className="mb-3">
-                        <label className="form-label">Logo (optional)</label>
-                        {existingFiles.logo && <div className="mb-2"><img src={existingFiles.logo} alt="Logo" style={{ maxHeight: '80px' }} /></div>}
-                        <input type="file" className="form-control" name="logo" onChange={handleInputChange} />
-                    </div>
-                    <div className="mb-3">
-                        <label className="form-label">Photo (optional)</label>
-                        {existingFiles.photo && <div className="mb-2"><img src={existingFiles.photo} alt="Photo" style={{ maxHeight: '80px', borderRadius: '50%' }} /></div>}
-                        <input type="file" className="form-control" name="photo" onChange={handleInputChange} />
-                    </div>
-                    <div className="d-flex justify-content-end gap-2">
-                        <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-                        <button type="submit" className="btn btn-primary">{isEditing ? 'Update Card' : 'Generate QR Card'}</button>
-                    </div>
+                        <div className="row">
+
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Name *</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
+
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Designation / Title</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    name="designation"
+                                    value={formData.designation}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Company Name</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    name="company_name"
+                                    value={formData.company_name}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Mobile *</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    name="mobile"
+                                    value={formData.mobile}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
+
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Email *</label>
+                                <input
+                                    type="email"
+                                    className="form-control"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
+
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Website</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    name="website"
+                                    value={formData.website}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+
+                            {/* Full width fields */}
+                            <div className="col-12 mb-3">
+                                <label className="form-label">Address</label>
+                                <textarea
+                                    className="form-control"
+                                    name="address"
+                                    rows="2"
+                                    value={formData.address}
+                                    onChange={handleInputChange}
+                                ></textarea>
+                            </div>
+
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Logo (optional)</label>
+                                {existingFiles.logo && (
+                                    <div className="mb-2">
+                                        <img src={existingFiles.logo} alt="Logo" style={{ maxHeight: '70px' }} />
+                                    </div>
+                                )}
+                                <input
+                                    type="file"
+                                    className="form-control"
+                                    name="logo"
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label">Photo (optional)</label>
+                                {existingFiles.photo && (
+                                    <div className="mb-2">
+                                        <img
+                                            src={existingFiles.photo}
+                                            alt="Photo"
+                                            style={{ maxHeight: '70px', borderRadius: '50%' }}
+                                        />
+                                    </div>
+                                )}
+                                <input
+                                    type="file"
+                                    className="form-control"
+                                    name="photo"
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+
+                        </div>
+
+                        <div className="d-flex justify-content-end gap-2 mt-3">
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => setShowForm(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button type="submit" className="btn btn-primary">
+                                {isEditing ? 'Update Card' : 'Generate QR Card'}
+                            </button>
+                        </div>
                     </form>
+
                 </div>
                 </div>
             </div>
@@ -409,22 +499,6 @@ const MyCard = () => {
                         )}
                         </div>
                     </div>
-
-                    {/* Optional: Show Photo below details */}
-                    {selectedCard.photo && (
-                        <div
-                        style={{
-                            marginTop: '1.5rem',
-                            textAlign: 'center',
-                        }}
-                        >
-                        <img
-                            src={`/storage/${selectedCard.photo}`}
-                            alt="Photo"
-                            style={{ maxHeight: '120px', borderRadius: '50%' }}
-                        />
-                        </div>
-                    )}
                     </div>
                     <div className="modal-footer">
                         <button

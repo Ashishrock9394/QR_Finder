@@ -1,0 +1,19 @@
+// resources/js/components/Layout/MainLayout.jsx
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import Navbar from './Navbar';
+import Footer from './Footer';
+
+const MainLayout = () => {
+    return (
+        <div className="d-flex flex-column min-vh-100">
+            <Navbar />
+            <main className="flex-grow-1">
+                <Outlet /> {/* Page content will render here */}
+            </main>
+            <Footer />
+        </div>
+    );
+};
+
+export default MainLayout;

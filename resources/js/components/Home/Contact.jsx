@@ -24,7 +24,7 @@ const Contact = () => {
     };
 
     return (
-        <section className="py-5">
+        <section className="py-4 mb-4">
             <div className="container">
                 <div className="row">
                     <div className="col-lg-6">

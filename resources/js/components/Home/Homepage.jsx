@@ -15,7 +15,6 @@ const Homepage = () => {
             <About />
             <Reviews />
             <Contact />
-            <Footer />
         </div>
     );
 };

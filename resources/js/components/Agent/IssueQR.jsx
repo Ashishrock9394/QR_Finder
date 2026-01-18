@@ -60,7 +60,7 @@ const IssueQR = () => {
     };
 
     return (
-        <div className="container mt-4">
+        <div className="container mt-4 mb-4">
             <div className="row">
                 <div className="col-12">
                     <h2 className="fw-bold mb-4">

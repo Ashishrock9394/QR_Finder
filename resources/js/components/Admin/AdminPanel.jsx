@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import Footer from '../Layout/Footer';
 import QRCode from "qrcode";
 import { jsPDF } from "jspdf";
 
@@ -110,7 +111,7 @@ const AdminPanel = () => {
     }
 
     return (
-        <div className="container mt-4">
+        <div className="container mt-4 mb-4">
             <div className="row mb-4">
                 <div className="col-12">
                     <h2 className="fw-bold">
@@ -123,52 +124,85 @@ const AdminPanel = () => {
 
             {/* Stats Overview */}
             <div className="row mb-4">
-                <div className="col-md-3 mb-3">
-                    <div className="card bg-primary text-white">
+                <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div className="card bg-secondary text-white h-100">
                         <div className="card-body">
-                            <div className="d-flex justify-content-between">
+                            <div className="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h5>Total QR Codes</h5>
-                                    <h2>{stats.total_qr_codes || 0}</h2>
+                                    <h6>Total QR Codes</h6>
+                                    <h3>{stats.total_qr_codes || 0}</h3>
                                 </div>
                                 <i className="bi bi-qr-code display-6 opacity-50"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className="col-md-3 mb-3">
-                    <div className="card bg-success text-white">
+                
+                <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div className="card bg-primary text-white h-100">
                         <div className="card-body">
-                            <div className="d-flex justify-content-between">
+                            <div className="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h5>Active Agents</h5>
-                                    <h2>{stats.total_agents || 0}</h2>
+                                    <h6>Total Visiting Cards</h6>
+                                    <h3>{stats.total_v_cards || 0}</h3>
                                 </div>
-                                <i className="bi bi-people display-6 opacity-50"></i>
+                                <i className="bi bi-person-vcard display-6 opacity-50"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className="col-md-3 mb-3">
-                    <div className="card bg-info text-white">
+
+                {/* Registered Agents */}
+                <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div className="card bg-dark text-white h-100">
                         <div className="card-body">
-                            <div className="d-flex justify-content-between">
+                            <div className="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h5>Registered Users</h5>
-                                    <h2>{stats.total_users || 0}</h2>
+                                    <h6>Registered Agents</h6>
+                                    <h3>{stats.total_agents || 0}</h3>
+                                </div>
+                                <i className="bi bi-person-badge display-6 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Active Agents */}
+                <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div className="card bg-success text-white h-100">
+                        <div className="card-body">
+                            <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6>Active Agents</h6>
+                                    <h3>{stats.active_agents || 0}</h3>
+                                </div>
+                                <i className="bi bi-person-check display-6 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div className="card bg-info text-white h-100">
+                        <div className="card-body">
+                            <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6>Registered Users</h6>
+                                    <h3>{stats.total_users || 0}</h3>
                                 </div>
                                 <i className="bi bi-person display-6 opacity-50"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className="col-md-3 mb-3">
-                    <div className="card bg-warning text-white">
+
+                <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div className="card bg-danger text-white h-100">
                         <div className="card-body">
-                            <div className="d-flex justify-content-between">
+                            <div className="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h5>Recovery Rate</h5>
-                                    <h2>{stats.recovery_rate || 0}%</h2>
+                                    <h6>Recovery Rate</h6>
+                                    <h3>{stats.recovery_rate || 0}%</h3>
                                 </div>
                                 <i className="bi bi-graph-up display-6 opacity-50"></i>
                             </div>
@@ -176,6 +210,7 @@ const AdminPanel = () => {
                     </div>
                 </div>
             </div>
+
 
             {/* Tabs */}
             <div className="row">

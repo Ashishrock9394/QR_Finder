@@ -7,3 +7,7 @@
     border: none;
     cursor: pointer;
 }
+.dropdown-fit {
+    min-width: 100%;
+    width: 100%;
+}

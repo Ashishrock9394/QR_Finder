@@ -1,8 +1,7 @@
-// resources/js/components/App.jsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // Import useAuth
-import Navbar from './Layout/Navbar';
+import { useAuth } from '../context/AuthContext';
+import MainLayout from './Layout/MainLayout';
 import Homepage from './Home/Homepage';
 import About from './Home/About';
 import Contact from './Home/Contact';
@@ -18,7 +17,7 @@ import MyCard from './User/MyCard';
 import CardDetailPage from './Home/CardDetailPage';
 
 const App = () => {
-    const { user, loading } = useAuth(); // Use the hook here
+    const { user, loading } = useAuth();
 
     if (loading) {
         return (
@@ -32,16 +31,14 @@ const App = () => {
 
     const ProtectedRoute = ({ children, roles = [] }) => {
         if (!user) return <Navigate to="/login" />;
-        if (roles.length > 0 && !roles.includes(user.role)) {
-            return <Navigate to="/" />;
-        }
+        if (roles.length > 0 && !roles.includes(user.role)) return <Navigate to="/" />;
         return children;
     };
 
     return (
-        <div>
-            <Navbar />
-            <Routes>
+        <Routes>
+            {/* Wrap all pages in MainLayout */}
+            <Route element={<MainLayout />}>
                 <Route path="/" element={<Homepage />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
@@ -49,6 +46,7 @@ const App = () => {
                 <Route path="/login/otp" element={!user ? <OTPLogin /> : <Navigate to="/dashboard" />} />
                 <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
                 <Route path="/v-cards/:id" element={<CardDetailPage />} />
+                
                 <Route path="/dashboard" element={
                     <ProtectedRoute>
                         <Dashboard />
@@ -78,6 +76,7 @@ const App = () => {
                         <MyItems />
                     </ProtectedRoute>
                 } />
+                
                 <Route path="/my-card" element={
                     <ProtectedRoute>
                         <MyCard />
@@ -85,8 +84,8 @@ const App = () => {
                 } />
 
                 <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-        </div>
+            </Route>
+        </Routes>
     );
 };
 

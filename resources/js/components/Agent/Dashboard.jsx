@@ -1,6 +1,7 @@
 // resources/js/components/Agent/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Footer from '../Layout/Footer';
 import { useAuth } from '../../context/AuthContext'; // Import useAuth hook
 
 const Dashboard = () => {
@@ -42,24 +43,31 @@ const Dashboard = () => {
     }
 
     const statCards = user?.role === 'admin' ? [
-        { title: 'Total QR Codes', value: stats.total_qr_codes, color: 'primary', icon: 'bi-qr-code' },
-        { title: 'Active Agents', value: stats.total_agents, color: 'success', icon: 'bi-people' },
+        { title: 'Total QR Codes', value: stats.total_qr_codes, color: 'secondary', icon: 'bi-qr-code' },
+        { title: 'Total Visiting Codes', value: stats.total_v_cards, color: 'primary', icon: 'bi-person-vcard' },
+        { title: 'Registered Agents', value: stats.total_agents, color: 'dark', icon: 'bi-person-badge' },
+        { title: 'Active Agents', value: stats.total_agents, color: 'success', icon: 'bi-person-check' },
         { title: 'Registered Users', value: stats.total_users, color: 'info', icon: 'bi-person' },
-        { title: 'Recovery Rate', value: `${stats.recovery_rate}%`, color: 'warning', icon: 'bi-graph-up' }
-    ] : user?.role === 'agent' ? [
-        { title: 'QR Codes Issued', value: stats.total_qr_codes, color: 'primary', icon: 'bi-qr-code' },
         { title: 'Active Items', value: stats.active_items, color: 'success', icon: 'bi-check-circle' },
         { title: 'Found Items', value: stats.found_items, color: 'warning', icon: 'bi-search' },
-        { title: 'Happy Customers', value: stats.happy_customers, color: 'info', icon: 'bi-emoji-smile' }
-    ] : [
-        { title: 'My Items', value: stats.my_items, color: 'primary', icon: 'bi-grid' },
+        { title: 'Happy Customers', value: stats.happy_customers, color: 'primary', icon: 'bi-emoji-smile' },
+        { title: 'Recovery Rate', value: `${stats.recovery_rate}%`, color: 'danger', icon: 'bi-graph-up' }
+    ] : user?.role === 'agent' ? [
+        { title: 'QR Codes Issued', value: stats.total_qr_codes, color: 'secondary', icon: 'bi-qr-code' },
         { title: 'Active Items', value: stats.active_items, color: 'success', icon: 'bi-check-circle' },
-        { title: 'Found Items', value: stats.found_items, color: 'warning', icon: 'bi-search' }
+        { title: 'Found Items', value: stats.found_items, color: 'warning', icon: 'bi-search' },
+        { title: 'Happy Customers', value: stats.happy_customers, color: 'primary', icon: 'bi-emoji-smile' }
+    ] : [
+        { title: 'My Items', value: stats.my_items, color: 'secondary', icon: 'bi-grid' },
+        { title: 'Active Items', value: stats.active_items, color: 'success', icon: 'bi-check-circle' },
+        { title: 'Found Items', value: stats.found_items, color: 'warning', icon: 'bi-search' },
+        { title: 'Happy Customers', value: stats.happy_customers, color: 'primary', icon: 'bi-emoji-smile' }
     ];
 
+
     return (
-        <div className="container mt-4">
-            <div className="row mb-4">
+        <div className="container mt-4 mb-3">
+            <div className="row mb-3">
                 <div className="col-12">
                     <h2 className="fw-bold">
                         <i className="bi bi-speedometer2 me-2"></i>
@@ -72,7 +80,7 @@ const Dashboard = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="row mb-5">
+            <div className="row mb-4">
                 {statCards.map((stat, index) => (
                     <div key={index} className="col-md-6 col-lg-3 mb-4">
                         <div className={`card bg-${stat.color} text-white`}>
@@ -152,6 +160,7 @@ const Dashboard = () => {
                     </div>
                 </div>
             )}
+            
         </div>
     );
 };

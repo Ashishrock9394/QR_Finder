@@ -4,7 +4,7 @@ import axios from 'axios';
 
 const AuthContext = createContext();
 
-axios.defaults.baseURL = "http://13.51.160.254";
+axios.defaults.baseURL = "http://127.0.0.1:8000";
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
 export const AuthProvider = ({ children }) => {
