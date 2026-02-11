@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useNavigate } from 'react-router-dom';
 import Loader from '../Layout/Loader';
 
 const MyCard = () => {
@@ -11,6 +12,7 @@ const MyCard = () => {
     const [showForm, setShowForm] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editingCardId, setEditingCardId] = useState(null);
+    const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
         name: '',
@@ -187,16 +189,61 @@ const MyCard = () => {
         <div className="row">
             {cards.map((card) => (
                 <div key={card.id} className="col-md-6 col-lg-4 mb-4">
-                    <div className="card h-100 shadow-lg rounded-3 hover-shadow-lg">
+                    <div className="card h-100 shadow-lg rounded-3 hover-shadow-lg position-relative" style={{ overflow: 'hidden' }}>
+                        {/* Blur Overlay for Pending Payment */}
+                        {card.payment_status === 'pending' && (
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                    backdropFilter: 'blur(5px)',
+                                    zIndex: 10,
+                                    borderRadius: '12px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        backgroundColor: 'white',
+                                        padding: '1.5rem 2rem',
+                                        borderRadius: '8px',
+                                        textAlign: 'center',
+                                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                                    }}
+                                >
+                                    <i
+                                        className="bi bi-lock-fill"
+                                        style={{ fontSize: '2rem', color: '#ff6b6b', marginBottom: '0.5rem', display: 'block' }}
+                                    ></i>
+                                    <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '1rem' }}>
+                                        Payment pending to view this card
+                                    </p>
+                                    <button
+                                        className="btn btn-primary btn-sm"
+                                        onClick={() => navigate(`/payment/${card.id}`)}
+                                        style={{ whiteSpace: 'nowrap' }}
+                                    >
+                                        <i className="bi bi-credit-card me-1"></i> Proceed to Payment
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         {/* QR Code Image */}
                         {card.qr_image && (
                             <img
                                 src={`/storage/${card.qr_image}`}
                                 className="card-img-top rounded-3 m-auto pt-2"
-                                alt="QR Code" style={{ width: '150px', height: '150px', objectFit: 'contain' }}
+                                alt="QR Code" style={{ width: '150px', height: '150px', objectFit: 'contain', opacity: card.payment_status === 'pending' ? 0.5 : 1 }}
                             />
                         )}
-                        <div className="card-body">
+                        <div className="card-body" style={{ opacity: card.payment_status === 'pending' ? 0.5 : 1 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                                 {/* LEFT: Name & Designation */}
                                 <div style={{ flex: '1 1 auto', minWidth: '200px' }}>
@@ -206,6 +253,16 @@ const MyCard = () => {
                                     )}
                                     {card.company_name && (
                                         <strong className="d-block text-dark mt-2 mb-1">{card.company_name}</strong>
+                                    )}
+                                    {card.payment_status === 'paid' && (
+                                        <span className="badge bg-success mt-2">
+                                            <i className="bi bi-check-circle me-1"></i> Paid
+                                        </span>
+                                    )}
+                                    {card.payment_status === 'pending' && (
+                                        <span className="badge bg-warning mt-2">
+                                            <i className="bi bi-clock-history me-1"></i> Pending
+                                        </span>
                                     )}
                                 </div>
 
@@ -239,16 +296,18 @@ const MyCard = () => {
 
 
                         {/* Card Footer with Buttons */}
-                        <div className="card-footer bg-transparent d-flex justify-content-between gap-2">
+                        <div className="card-footer bg-transparent d-flex justify-content-between gap-2" style={{ opacity: card.payment_status === 'pending' ? 0.5 : 1 }}>
                             <button
                                 className="btn btn-outline-info btn-sm rounded-pill px-3 py-2 hover-shadow"
                                 onClick={() => setSelectedCard(card)}
+                                disabled={card.payment_status === 'pending'}
                             >
                                 <i className="bi bi-eye me-1"></i> View
                             </button>
                             <button
                                 className="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 hover-shadow"
                                 onClick={() => handleEdit(card)}
+                                disabled={card.payment_status === 'pending'}
                             >
                                 <i className="bi bi-pencil me-1"></i> Edit
                             </button>

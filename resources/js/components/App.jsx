@@ -14,6 +14,7 @@ import AdminPanel from './Admin/AdminPanel';
 import UserProfile from './User/UserProfile';
 import MyItems from './User/MyItems';
 import MyCard from './User/MyCard';
+import PaymentPage from './Payment/PaymentPage';
 import CardDetailPage from './Home/CardDetailPage';
 
 const App = () => {
@@ -80,6 +81,12 @@ const App = () => {
                 <Route path="/my-card" element={
                     <ProtectedRoute>
                         <MyCard />
+                    </ProtectedRoute>
+                } />
+                
+                <Route path="/payment/:cardId" element={
+                    <ProtectedRoute>
+                        <PaymentPage />
                     </ProtectedRoute>
                 } />
 

@@ -8,6 +8,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\VCardController;
+use App\Http\Controllers\PaymentController;
 use Illuminate\Http\Request;
 use App\Http\Middleware\SanctumTimeout;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,12 @@ Route::middleware(['redirect.unauth', 'auth:sanctum', SanctumTimeout::class])->g
     // Route::get('/v-cards/{card}', [VCardController::class, 'show']);
     Route::put('/v-cards/{card}', [VCardController::class, 'update']);
     Route::delete('/v-cards/{card}', [VCardController::class, 'destroy']);
+
+    // Payment routes
+    Route::post('/payments/create-order', [PaymentController::class, 'createOrder']);
+    Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']);
+    Route::post('/payments/failed', [PaymentController::class, 'paymentFailed']);
+    Route::get('/payments/history/{vcardId}', [PaymentController::class, 'getPaymentHistory']);
 
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
