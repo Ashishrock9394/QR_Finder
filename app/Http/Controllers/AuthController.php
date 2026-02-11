@@ -64,7 +64,11 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            $token = $user->createToken('auth-token')->plainTextToken;
+            $tokenResult = $user->createToken('auth-token');
+            $token = $tokenResult->plainTextToken;
+            $user->tokens()->latest()->first()->update([
+                'last_activity' => now(),
+            ]);
 
             return response()->json([
                 'user' => $user,

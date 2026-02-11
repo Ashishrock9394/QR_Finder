@@ -9,6 +9,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\VCardController;
 use Illuminate\Http\Request;
+use App\Http\Middleware\SanctumTimeout;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -19,7 +20,7 @@ Route::get('/v-cards/{card}', [VCardController::class, 'show'])->name('show.visi
 
 Route::get('/qr-codes/public/{qrCode}', [QRCodeController::class, 'getByQRCode']);
 
-Route::middleware(['redirect.unauth', 'auth:sanctum'])->group(function () {
+Route::middleware(['redirect.unauth', 'auth:sanctum', SanctumTimeout::class])->group(function () {
 
     Route::get('/user', fn (Request $request) => $request->user());
     Route::post('/logout', [AuthController::class, 'logout']);

@@ -32,5 +32,15 @@ class DatabaseSeeder extends Seeder
             'status' => 'active',
             'email_verified_at' => now(),
         ]);
+
+        User::create([
+            'name' => 'Ashish Agent',
+            'mobile' => '9198552556',
+            'email' => 'agent@gmail.com',
+            'password' => Hash::make('agent@123'),
+            'role' => 'agent',
+            'status' => 'active',
+            'email_verified_at' => now(),
+        ]);
     }
 }

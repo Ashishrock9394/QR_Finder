@@ -23,7 +23,6 @@ class VCardController extends Controller
     // Show single card
     public function show($qr_code)
     {   
-        // dd($request->all());
         $card = VCard::where('qr_code', $qr_code)->firstOrFail();
         return response()->json($card);
     }
