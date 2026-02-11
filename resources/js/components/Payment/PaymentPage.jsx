@@ -9,7 +9,52 @@ const PaymentPage = () => {
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState(null);
-    const [amount, setAmount] = useState(0);
+    const [paymentMethod, setPaymentMethod] = useState('card');
+    const [showCardModal, setShowCardModal] = useState(false);
+    const [showUPIModal, setShowUPIModal] = useState(false);
+    const [showQRLock, setShowQRLock] = useState(false);
+    const [upiId, setUpiId] = useState('');
+    const FIXED_AMOUNT = 29;
+    const MERCHANT_UPI = import.meta.env.VITE_MERCHANT_UPI || 'testqrfinder@ybl';
+
+    const [cardDetails, setCardDetails] = useState({ number: '', name: '', expiry: '', cvv: '' });
+    const [cardType, setCardType] = useState('');
+    const [cardValid, setCardValid] = useState(false);
+    const [upiValid, setUpiValid] = useState(false);
+
+    // Basic card type detection (Visa, Mastercard, Amex, RuPay)
+    const detectCardType = (num) => {
+        if (!num) return '';
+        const v = num.replace(/\s+/g, '');
+        if (/^4/.test(v)) return 'Visa';
+        if (/^(5[1-5])/.test(v) || /^(2(2[2-9]|[3-6]\d|7[01]|720))/.test(v)) return 'Mastercard';
+        if (/^3[47]/.test(v)) return 'Amex';
+        if (/^(60|65|81)/.test(v)) return 'RuPay';
+        return 'Unknown';
+    };
+
+    // Luhn algorithm for card validation
+    const luhnCheck = (num) => {
+        const s = num.replace(/\D/g, '');
+        let sum = 0;
+        let toggle = false;
+        for (let i = s.length - 1; i >= 0; i--) {
+            let d = parseInt(s.charAt(i), 10);
+            if (toggle) {
+                d *= 2;
+                if (d > 9) d -= 9;
+            }
+            sum += d;
+            toggle = !toggle;
+        }
+        return s.length > 0 && sum % 10 === 0;
+    };
+
+    const verifyUpiId = (id) => {
+        if (!id) return false;
+        // basic UPI id pattern: localpart@handle
+        return /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(id);
+    };
 
     // Load Razorpay script
     useEffect(() => {
@@ -39,7 +84,6 @@ const PaymentPage = () => {
                 const foundCard = response.data.find(c => c.id === parseInt(cardId));
                 if (foundCard) {
                     setCard(foundCard);
-                    setAmount(foundCard.amount || 29); // Default amount
                 } else {
                     setError('Card not found');
                 }
@@ -62,7 +106,7 @@ const PaymentPage = () => {
             // Create order
             const orderResponse = await axios.post('/api/payments/create-order', {
                 vcard_id: card.id,
-                amount: amount,
+                amount: FIXED_AMOUNT,
             });
 
             if (!orderResponse.data.success) {
@@ -76,11 +120,12 @@ const PaymentPage = () => {
             // Razorpay options
             const options = {
                 key: key_id,
-                amount: amount * 100, // Amount in paise
+                amount: FIXED_AMOUNT * 100, // Amount in paise
                 currency: 'INR',
                 name: 'QR Finder',
                 description: `Payment for Virtual Card - ${card.name}`,
                 order_id: order_id,
+                method: paymentMethod,
                 handler: async (response) => {
                     try {
                         // Verify payment
@@ -107,15 +152,8 @@ const PaymentPage = () => {
                     }
                     setProcessing(false);
                 },
-                prefill: {
-                    email: card?.email || '',
-                    contact: card?.mobile || '',
-                },
-                notes: {
-                    vcard_id: card?.id,
-                },
                 theme: {
-                    color: '#3399cc',
+                    color: '#b34e75',
                 },
                 modal: {
                     ondismiss: () => {
@@ -168,86 +206,321 @@ const PaymentPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-12 px-4">
-            <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8">
-                <h1 className="text-2xl font-bold mb-6 text-center">Payment for Virtual Card</h1>
+        <div className="min-h-screen bg-light d-flex align-items-center justify-content-center py-5">
+            <div className="card shadow-lg" style={{ maxWidth: '500px', width: '100%' }}>
+                <div className="card-body p-5 text-center">
+                    {/* Header */}
+                    <h2 className="fw-bold mb-3">Select Payment Method</h2>
+                    <p className="text-muted mb-4">Choose how you want to pay</p>
 
-                {error && (
-                    <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                        {error}
-                    </div>
-                )}
+                    {error && (
+                        <div className="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i className="bi bi-exclamation-circle me-2"></i>
+                            {error}
+                            <button type="button" className="btn-close" onClick={() => setError(null)}></button>
+                        </div>
+                    )}
 
-                <div className="mb-6">
-                    <div className="border rounded-lg p-4 mb-4">
-                        <h2 className="text-lg font-semibold mb-2">{card.name}</h2>
-                        <p className="text-gray-600 text-sm mb-1">
-                            <span className="font-medium">Email:</span> {card.email}
-                        </p>
-                        <p className="text-gray-600 text-sm mb-1">
-                            <span className="font-medium">Mobile:</span> {card.mobile}
-                        </p>
-                        {card.company_name && (
-                            <p className="text-gray-600 text-sm">
-                                <span className="font-medium">Company:</span> {card.company_name}
-                            </p>
-                        )}
+                    {/* Amount Display */}
+                    <div className="card bg-primary text-white mb-4 p-4">
+                        <p className="mb-1 small">Amount to Pay</p>
+                        <h3 className="m-0">₹{FIXED_AMOUNT.toFixed(2)}</h3>
                     </div>
 
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Amount (INR)
-                        </label>
-                        <input
-                            type="number"
-                            min="1"
-                            step="0.01"
-                            value={amount || 0}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                setAmount(value === '' ? 0 : parseFloat(value) || 0);
+                    {/* Payment Methods */}
+                    <div className="d-grid gap-3">
+                        {/* Card Payment */}
+                        <button
+                            className="btn btn-outline-primary btn-lg d-flex align-items-center justify-content-center gap-3 py-3"
+                            onClick={() => {
+                                setPaymentMethod('card');
+                                setShowCardModal(true);
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            disabled={processing}
-                        />
+                            style={{ borderWidth: '2px' }}
+                        >
+                            <i className="bi bi-credit-card fs-5"></i>
+                            <div className="text-start">
+                                <div className="fw-bold">Debit/Credit Card</div>
+                                <small className="text-muted">Visa, Mastercard, RuPay</small>
+                            </div>
+                        </button>
+
+                        {/* UPI Payment */}
+                        <button
+                            className="btn btn-outline-primary btn-lg d-flex align-items-center justify-content-center gap-3 py-3"
+                            onClick={() => {
+                                setPaymentMethod('upi');
+                                setShowUPIModal(true);
+                            }}
+                            style={{ borderWidth: '2px' }}
+                        >
+                            <i className="bi bi-phone fs-5"></i>
+                            <div className="text-start">
+                                <div className="fw-bold">UPI</div>
+                                <small className="text-muted">Google Pay, PhonePe, Paytm</small>
+                            </div>
+                        </button>
                     </div>
 
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                        <p className="text-gray-700">
-                            <span className="font-bold text-lg text-blue-600">₹{typeof amount === 'number' && !isNaN(amount) ? amount.toFixed(2) : '0.00'}</span>
-                        </p>
-                        <p className="text-xs text-gray-600 mt-2">
-                            Make your card visible by completing this payment
-                        </p>
+                    {/* Back Button */}
+                    <button
+                        className="btn btn-light mt-4 w-100"
+                        onClick={() => navigate('/my-card')}
+                    >
+                        <i className="bi bi-arrow-left me-2"></i>Back to Cards
+                    </button>
+
+                    {/* Footer */}
+                    <hr className="my-4" />
+                    <p className="small text-muted mb-0">
+                        <i className="bi bi-shield-lock me-1"></i>Secured by Razorpay
+                    </p>
+                </div>
+            </div>
+
+            {/* Card Payment Modal */}
+            {showCardModal && (
+                <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">
+                                    <i className="bi bi-credit-card me-2"></i>Card Payment
+                                </h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => setShowCardModal(false)}
+                                ></button>
+                            </div>
+                            <div className="modal-body p-4">
+                                <div className="mb-3 text-center">
+                                    <i className="bi bi-credit-card text-primary" style={{ fontSize: '3rem', display: 'block', marginBottom: '0.5rem' }}></i>
+                                    <h5 className="mb-1">Enter Card Details</h5>
+                                    <p className="text-muted small">We will detect card type and validate number</p>
+                                </div>
+
+                                <div className="mb-3">
+                                    <label className="form-label">Card Number</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="1234 5678 9012 3456"
+                                        value={cardDetails.number}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setCardDetails(prev => ({ ...prev, number: val }));
+                                            const t = detectCardType(val);
+                                            setCardType(t);
+                                            setCardValid(luhnCheck(val));
+                                        }}
+                                        disabled={processing}
+                                    />
+                                    <div className="mt-2 small text-muted">Type: <strong>{cardType || '—'}</strong> • Valid: <strong>{cardValid ? 'Yes' : 'No'}</strong></div>
+                                </div>
+
+                                <div className="row">
+                                    <div className="col-md-6 mb-3">
+                                        <label className="form-label">Name on Card</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={cardDetails.name}
+                                            onChange={(e) => setCardDetails(prev => ({ ...prev, name: e.target.value }))}
+                                            disabled={processing}
+                                        />
+                                    </div>
+                                    <div className="col-md-3 mb-3">
+                                        <label className="form-label">Expiry (MM/YY)</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="12/25"
+                                            value={cardDetails.expiry}
+                                            onChange={(e) => setCardDetails(prev => ({ ...prev, expiry: e.target.value }))}
+                                            disabled={processing}
+                                        />
+                                    </div>
+                                    <div className="col-md-3 mb-3">
+                                        <label className="form-label">CVV</label>
+                                        <input
+                                            type="password"
+                                            className="form-control"
+                                            placeholder="123"
+                                            value={cardDetails.cvv}
+                                            onChange={(e) => setCardDetails(prev => ({ ...prev, cvv: e.target.value }))}
+                                            disabled={processing}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="modal-footer d-flex gap-2">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowCardModal(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={() => {
+                                        if (!cardValid) {
+                                            setError('Please enter a valid card number');
+                                            return;
+                                        }
+                                        // proceed to payment using Razorpay (card)
+                                        initializePayment();
+                                        setShowCardModal(false);
+                                    }}
+                                    disabled={processing}
+                                >
+                                    {processing ? 'Processing...' : `Pay ₹${FIXED_AMOUNT.toFixed(2)}`}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            )}
 
-                <button
-                    onClick={initializePayment}
-                    disabled={processing || amount <= 0}
-                    className={`w-full py-2 px-4 rounded font-medium text-white transition ${
-                        processing
-                            ? 'bg-gray-400 cursor-not-allowed'
-                            : amount > 0
-                            ? 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
-                            : 'bg-gray-400 cursor-not-allowed'
-                    }`}
-                >
-                    {processing ? 'Processing...' : `Pay ₹${typeof amount === 'number' && !isNaN(amount) ? amount.toFixed(2) : '0.00'}`}
-                </button>
+            {/* UPI Payment Modal */}
+            {showUPIModal && (
+                <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">
+                                    <i className="bi bi-phone me-2"></i>UPI Payment
+                                </h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => {
+                                        setShowUPIModal(false);
+                                        setShowQRLock(false);
+                                        setUpiId('');
+                                    }}
+                                ></button>
+                            </div>
+                            <div className="modal-body p-4">
+                                <div className="text-center mb-4">
+                                    <p className="text-muted">Amount: <strong>₹{FIXED_AMOUNT.toFixed(2)}</strong></p>
+                                </div>
 
-                <button
-                    onClick={() => navigate('/my-card')}
-                    disabled={processing}
-                    className="w-full mt-3 py-2 px-4 rounded font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 transition"
-                >
-                    Cancel
-                </button>
+                                {/* QR Code Section */}
+                                <div className="text-center mb-4 p-4 bg-light rounded" style={{ position: 'relative' }}>
+                                    {/* Generate QR for merchant UPI and amount */}
+                                    {/** If QR is locked we show the QR with overlay lock */}
+                                    <img
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(`upi://pay?pa=${MERCHANT_UPI}&pn=QR%20Finder&am=${FIXED_AMOUNT}&cu=INR`)}`}
+                                        alt="UPI QR"
+                                        style={{ width: '180px', height: '180px', display: 'block', margin: '0 auto' }}
+                                    />
+                                    <p className="text-muted mt-2 small">Scan with any UPI app to pay</p>
 
-                <p className="text-xs text-center text-gray-500 mt-4">
-                    Secured by Razorpay Payment Gateway
-                </p>
-            </div>
+                                    {/* Lock Icon on QR (overlay) */}
+                                    {showQRLock && (
+                                        <div
+                                            style={{
+                                                position: 'absolute',
+                                                top: '50%',
+                                                left: '50%',
+                                                transform: 'translate(-50%, -50%)',
+                                                backgroundColor: 'rgba(0,0,0,0.65)',
+                                                color: 'white',
+                                                padding: '0.75rem',
+                                                borderRadius: '50%',
+                                                width: '64px',
+                                                height: '64px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                        >
+                                            <i className="bi bi-lock-fill" style={{ fontSize: '1.5rem' }}></i>
+                                        </div>
+                                    )}
+
+                                    <div className="mt-3">
+                                        <button
+                                            className="btn btn-sm btn-outline-primary me-2"
+                                            onClick={() => setShowQRLock(!showQRLock)}
+                                        >
+                                            {showQRLock ? 'Unlock QR' : 'Pay via QR'}
+                                        </button>
+                                        <button
+                                            className="btn btn-sm btn-outline-secondary"
+                                            onClick={() => {
+                                                // generate a dynamic UPI string for scanning using merchant UPI
+                                                setShowQRLock(true);
+                                            }}
+                                        >
+                                            Refresh QR
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Divider */}
+                                <div className="text-center mb-4">
+                                    <span className="badge bg-light text-dark">OR</span>
+                                </div>
+
+                                {/* UPI ID Input */}
+                                <div className="mb-4">
+                                    <label className="form-label">Enter UPI ID</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="yourname@paytm"
+                                        value={upiId}
+                                        onChange={(e) => {
+                                            const v = e.target.value;
+                                            setUpiId(v);
+                                            const ok = verifyUpiId(v.trim());
+                                            setUpiValid(ok);
+                                            if (ok) setError(null);
+                                        }}
+                                        disabled={processing}
+                                    />
+                                    <small className={`d-block mt-1 ${upiValid ? 'text-success' : 'text-muted'}`}>
+                                        {upiValid ? 'Valid UPI ID' : 'e.g., yourname@okhdfcbank, mobile@googlepay'}
+                                    </small>
+                                </div>
+                            </div>
+                            <div className="modal-footer d-flex gap-2">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => {
+                                        setShowUPIModal(false);
+                                        setShowQRLock(false);
+                                        setUpiId('');
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    onClick={() => {
+                                        if (!showQRLock && !upiValid) {
+                                            setError('Please enter a valid UPI ID or unlock the QR code');
+                                            return;
+                                        }
+                                        initializePayment();
+                                        setShowUPIModal(false);
+                                        setShowQRLock(false);
+                                    }}
+                                    disabled={processing || (!showQRLock && !upiValid)}
+                                >
+                                    {processing ? 'Processing...' : `Proceed to Pay ₹${FIXED_AMOUNT.toFixed(2)}`}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

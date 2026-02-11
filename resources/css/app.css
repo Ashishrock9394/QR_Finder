@@ -9,3 +9,130 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Global fix for input-like selection behavior */
+* {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -o-user-select: none;
+}
+
+/* Allow text selection only where it makes sense */
+p, span, a, h1, h2, h3, h4, h5, h6, li, label, button {
+    cursor: default !important;
+}
+
+/* Standard input and textarea selection */
+input:not([type="radio"]):not([type="checkbox"]),
+textarea,
+[contenteditable] {
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    -o-user-select: text;
+}
+
+/* Radio buttons and checkboxes */
+input[type="radio"],
+input[type="checkbox"] {
+    cursor: pointer !important;
+}
+
+/* Labels with inputs */
+label {
+    cursor: default !important;
+    user-select: none !important;
+}
+
+label input[type="radio"],
+label input[type="checkbox"] {
+    cursor: pointer !important;
+}
+
+/* Buttons */
+button,
+[role="button"],
+.btn {
+    cursor: pointer !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+}
+
+/* Links */
+a {
+    cursor: pointer !important;
+}
+
+/* Fix for clickable elements */
+.cursor-pointer {
+    cursor: pointer !important;
+    user-select: none !important;
+}
+
+/* Form controls */
+.form-control,
+.form-select,
+.form-check-input {
+    cursor: text !important;
+    user-select: text !important;
+}
+
+.form-check-label {
+    cursor: default !important;
+    user-select: none !important;
+}
+
+/* Card and container elements */
+.card,
+.modal,
+.dropdown,
+.nav {
+    user-select: none !important;
+}
+
+/* Ensure buttons in cards work properly */
+.card button,
+.modal button {
+    cursor: pointer !important;
+}
+
+/* Fix for Bootstrap components */
+.dropdown-menu label,
+.modal-header,
+.modal-footer {
+    user-select: none !important;
+}
+
+/* Prevent text selection on interactive elements */
+.btn:active,
+button:active,
+[role="button"]:active {
+    user-select: none !important;
+}
+
+/* Remove selection styling */
+::selection {
+    background: transparent;
+}
+
+::-moz-selection {
+    background: transparent;
+}
+
+/* Prevent touch callout */
+* {
+    -webkit-touch-callout: none;
+}
+
+/* Allow touch callout only on input/textarea */
+input,
+textarea {
+    -webkit-touch-callout: default;
+}
+
+
