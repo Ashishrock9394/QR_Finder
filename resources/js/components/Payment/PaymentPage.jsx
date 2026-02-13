@@ -30,7 +30,7 @@ const PaymentPage = () => {
 
     // Razorpay.me URL with amount
     const razorpayRedirectUrl = isRazorpayLink
-        ? `${MERCHANT_UPI}?amount=${FIXED_AMOUNT}`
+        ? `${MERCHANT_UPI}`
         : null;
 
     // Fetch card details
