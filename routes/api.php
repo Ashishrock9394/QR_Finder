@@ -21,6 +21,9 @@ Route::get('/v-cards/{card}', [VCardController::class, 'show'])->name('show.visi
 
 Route::get('/qr-codes/public/{qrCode}', [QRCodeController::class, 'getByQRCode']);
 
+// Public webhook endpoint for Razorpay (no auth)
+Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook']);
+
 Route::middleware(['redirect.unauth', 'auth:sanctum', SanctumTimeout::class])->group(function () {
 
     Route::get('/user', fn (Request $request) => $request->user());

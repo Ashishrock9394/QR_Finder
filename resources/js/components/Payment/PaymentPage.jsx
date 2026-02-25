@@ -57,6 +57,28 @@ const PaymentPage = () => {
         fetchCard();
     }, [cardId]);
 
+    // Poll payment status in background so UI updates when webhook marks paid
+    useEffect(() => {
+        if (!card || card.payment_status !== 'pending') {
+            return;
+        }
+
+        const interval = setInterval(async () => {
+            try {
+                const res = await axios.get(`/api/payments/history/${card.id}`);
+                if (res.data && res.data.current_status === 'paid') {
+                    setCard((prev) => ({ ...prev, payment_status: 'paid' }));
+                    clearInterval(interval);
+                    navigate('/my-card');
+                }
+            } catch (err) {
+                console.error('Error polling payment status', err);
+            }
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [card, navigate]);
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -99,48 +121,107 @@ const PaymentPage = () => {
                         </h3>
                     </div>
 
-                    {/* CASE 1: Razorpay.me exists */}
-                    {isRazorpayLink ? (
+                    {/* CASE 1: Razorpay flow */}
+                    <div>
                         <button
                             className="btn btn-lg btn-primary w-100"
-                            onClick={() =>
-                                window.location.href =
-                                    razorpayRedirectUrl
-                            }
-                        >
-                            Pay via Razorpay
-                        </button>
-                    ) : (
-                        <>
-                            {/* CASE 2: No ENV → Generate QR */}
-                            <div className="text-center mb-4 p-4 bg-light rounded">
-                                <img
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(
-                                        upiDeepLink
-                                    )}`}
-                                    alt="UPI QR"
-                                    style={{
-                                        width: '200px',
-                                        height: '200px',
-                                        margin: 'auto',
-                                    }}
-                                />
-                                <p className="text-muted mt-3">
-                                    Scan with any UPI app
-                                </p>
-                                <p className="small text-muted">
-                                    UPI ID: {MERCHANT_UPI}
-                                </p>
-                            </div>
+                            onClick={async () => {
+                                setProcessing(true);
+                                setError(null);
+                                try {
+                                    // Try server-backed checkout first. If order creation or checkout fails
+                                    // and merchant provided a razorpay.me link, open that as a last resort.
 
-                            <a
-                                href={upiDeepLink}
-                                className="btn btn-success w-100"
-                            >
-                                Open in UPI App
-                            </a>
-                        </>
-                    )}
+                                    // Create order on server
+                                    const createRes = await axios.post('/api/payments/create-order', {
+                                        vcard_id: card.id,
+                                        amount: FIXED_AMOUNT,
+                                    });
+
+                                    if (!createRes.data || !createRes.data.order_id) {
+                                        // fallback to merchant link if available
+                                        if (isRazorpayLink && razorpayRedirectUrl) {
+                                            window.open(razorpayRedirectUrl, '_blank');
+                                            setProcessing(false);
+                                            return;
+                                        }
+                                        throw new Error('Failed to create order');
+                                    }
+
+                                    const { order_id: orderId, key_id: keyId } = createRes.data;
+
+                                    // Load Razorpay script if not loaded
+                                    if (!window.Razorpay) {
+                                        await new Promise((resolve, reject) => {
+                                            const s = document.createElement('script');
+                                            s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+                                            s.onload = resolve;
+                                            s.onerror = reject;
+                                            document.body.appendChild(s);
+                                        });
+                                    }
+
+                                    const options = {
+                                        key: keyId || import.meta.env.VITE_RAZORPAY_KEY_ID || import.meta.env.VITE_MERCHANT_KEY,
+                                        amount: FIXED_AMOUNT * 100,
+                                        currency: 'INR',
+                                        name: 'QR Finder',
+                                        description: `Payment for vcard ${card.name}`,
+                                        order_id: orderId,
+                                        handler: async function (response) {
+                                            try {
+                                                // Verify payment on server
+                                                const verifyRes = await axios.post('/api/payments/verify', {
+                                                    razorpay_order_id: response.razorpay_order_id,
+                                                    razorpay_payment_id: response.razorpay_payment_id,
+                                                    razorpay_signature: response.razorpay_signature,
+                                                    vcard_id: card.id,
+                                                });
+
+                                                if (verifyRes.data && verifyRes.data.success) {
+                                                    setCard((prev) => ({ ...prev, payment_status: 'paid' }));
+                                                    navigate('/my-card');
+                                                } else {
+                                                    setError('Payment verification failed');
+                                                }
+                                            } catch (err) {
+                                                console.error('Verification error', err);
+                                                setError('Payment verification failed');
+                                            }
+                                        },
+                                        modal: {
+                                            ondismiss: async function () {
+                                                // If modal dismissed, optionally notify server
+                                            },
+                                        },
+                                        prefill: {
+                                            name: card.name || '',
+                                        },
+                                        notes: {
+                                            vcard_id: card.id,
+                                        },
+                                    };
+
+                                    const rzp = new window.Razorpay(options);
+                                    rzp.open();
+
+                                } catch (err) {
+                                    console.error(err);
+                                    // If server-side flow fails, fallback to razorpay.me link if provided
+                                    if (isRazorpayLink && razorpayRedirectUrl) {
+                                        window.open(razorpayRedirectUrl, '_blank');
+                                    } else {
+                                        setError(err.message || 'Payment failed');
+                                    }
+                                } finally {
+                                    setProcessing(false);
+                                }
+                            }}
+                            disabled={processing}
+                        >
+                            {processing ? 'Processing…' : 'Pay via Razorpay'}
+                        </button>
+                    </div>
 
                     <button
                         className="btn btn-light mt-4 w-100"

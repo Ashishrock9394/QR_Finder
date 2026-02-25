@@ -192,6 +192,163 @@ class PaymentController extends Controller
     }
 
     /**
+     * Handle Razorpay webhooks (public endpoint)
+     */
+    public function handleWebhook(Request $request)
+    {
+        try {
+            $payload = $request->getContent();
+            $signature = $request->header('X-Razorpay-Signature') ?? $request->header('x-razorpay-signature');
+            $secret = config('services.razorpay.webhook_secret');
+
+            if (empty($secret)) {
+                Log::warning('Razorpay webhook received but webhook secret not configured.');
+                return response()->json(['success' => false, 'message' => 'Webhook secret not configured'], 400);
+            }
+
+            $computed = hash_hmac('sha256', $payload, $secret);
+            if (!hash_equals($computed, (string)$signature)) {
+                Log::warning('Invalid Razorpay webhook signature.');
+                return response('Invalid signature', 400);
+            }
+
+            $data = json_decode($payload, true);
+            $event = $data['event'] ?? null;
+
+            // Try to locate payment entity for multiple webhook shapes
+            $paymentEntity = $data['payload']['payment']['entity'] ?? null;
+            $linkEntity = $data['payload']['payment_link']['entity'] ?? null;
+
+            $entity = $paymentEntity ?? $linkEntity;
+
+            // Helper to extract notes safely
+            $extractNotes = function ($ent) {
+                if (empty($ent)) {
+                    return [];
+                }
+                return $ent['notes'] ?? ($ent['entity']['notes'] ?? []);
+            };
+
+            $notes = $extractNotes($entity);
+
+            $paymentId = $paymentEntity['id'] ?? $linkEntity['id'] ?? null;
+            $orderId = $paymentEntity['order_id'] ?? null;
+            $linkId = $linkEntity['id'] ?? ($paymentEntity['link_id'] ?? null);
+
+            // Try to find vcard_id from notes
+            $vcardIdFromNotes = null;
+            if (!empty($notes) && isset($notes['vcard_id'])) {
+                $vcardIdFromNotes = intval($notes['vcard_id']);
+            }
+
+            // Find associated Payment record
+            $payment = null;
+            if ($orderId) {
+                $payment = Payment::where('razorpay_order_id', $orderId)->first();
+            }
+            if (!$payment && $paymentId) {
+                $payment = Payment::where('razorpay_payment_id', $paymentId)->first();
+            }
+            if (!$payment && $linkId) {
+                $payment = Payment::where('metadata', 'like', '%' . $linkId . '%')->first();
+            }
+
+            // If we still don't have a payment but notes include vcard_id, create a payment record
+            if (!$payment && $vcardIdFromNotes) {
+                $vcard = VCard::find($vcardIdFromNotes);
+                if ($vcard) {
+                    $payment = Payment::create([
+                        'user_id' => $vcard->user_id,
+                        'vcard_id' => $vcard->id,
+                        'razorpay_order_id' => $orderId,
+                        'razorpay_payment_id' => $paymentId,
+                        'amount' => $entity['amount'] ?? ($entity['amount_paid'] ?? 0) / 100,
+                        'currency' => $entity['currency'] ?? 'INR',
+                        'status' => 'pending',
+                        'description' => 'Payment via payment link',
+                        'metadata' => ['raw' => $entity],
+                    ]);
+                }
+            }
+
+            // Handle successful capture / payment
+            $isCaptured = ($paymentEntity && ($paymentEntity['status'] ?? '') === 'captured')
+                || in_array($event, ['payment.captured', 'payment_link.paid', 'payment.link.paid', 'payment_link.payment.captured']);
+
+            if ($isCaptured) {
+                // prefer to update using $payment if exists
+                if ($payment) {
+                    $payment->update([
+                        'razorpay_payment_id' => $paymentId ?: $payment->razorpay_payment_id,
+                        'status' => 'paid',
+                    ]);
+
+                    $vcard = VCard::find($payment->vcard_id);
+                    if ($vcard) {
+                        $vcard->update([
+                            'payment_status' => 'paid',
+                            'razorpay_payment_id' => $paymentId ?: $vcard->razorpay_payment_id,
+                            'paid_at' => now(),
+                        ]);
+                    }
+                } elseif ($vcardIdFromNotes) {
+                    $vcard = VCard::find($vcardIdFromNotes);
+                    if ($vcard) {
+                        // create a payment record marking it paid
+                        Payment::create([
+                            'user_id' => $vcard->user_id,
+                            'vcard_id' => $vcard->id,
+                            'razorpay_order_id' => $orderId,
+                            'razorpay_payment_id' => $paymentId,
+                            'amount' => $entity['amount'] ?? ($entity['amount_paid'] ?? 0) / 100,
+                            'currency' => $entity['currency'] ?? 'INR',
+                            'status' => 'paid',
+                            'description' => 'Payment via payment link',
+                            'metadata' => ['raw' => $entity],
+                        ]);
+
+                        $vcard->update([
+                            'payment_status' => 'paid',
+                            'razorpay_payment_id' => $paymentId,
+                            'paid_at' => now(),
+                        ]);
+                    }
+                }
+            }
+
+            // Handle failures
+            $isFailed = ($paymentEntity && ($paymentEntity['status'] ?? '') === 'failed')
+                || in_array($event, ['payment.failed', 'payment_link.failed', 'payment.link.failed']);
+
+            if ($isFailed) {
+                if ($payment) {
+                    $payment->update(['status' => 'failed']);
+                } elseif ($vcardIdFromNotes) {
+                    $vcard = VCard::find($vcardIdFromNotes);
+                    if ($vcard) {
+                        Payment::create([
+                            'user_id' => $vcard->user_id,
+                            'vcard_id' => $vcard->id,
+                            'razorpay_order_id' => $orderId,
+                            'razorpay_payment_id' => $paymentId,
+                            'amount' => $entity['amount'] ?? 0,
+                            'currency' => $entity['currency'] ?? 'INR',
+                            'status' => 'failed',
+                            'description' => 'Failed payment via payment link',
+                            'metadata' => ['raw' => $entity],
+                        ]);
+                    }
+                }
+            }
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::error('Webhook processing error: ' . $e->getMessage());
+            return response()->json(['success' => false], 500);
+        }
+    }
+
+    /**
      * Get payment history for a vcard
      */
     public function getPaymentHistory(Request $request, $vcardId)
