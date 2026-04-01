@@ -152,4 +152,16 @@ class VCardController extends Controller
 
         return response()->json(['message' => 'Card deleted successfully']);
     }
+
+    /**
+     * Get the current user's vCards
+     */
+    public function myVCards(Request $request)
+    {
+        $vCards = VCard::where('user_id', $request->user()->id)
+            ->latest()
+            ->get();
+
+        return response()->json($vCards);
+    }
 }

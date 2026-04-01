@@ -40,10 +40,15 @@ class DashboardController extends Controller
                 })->where('is_approved', true)->count(),
             ];
         } else {
+            // User stats
+            $qrCodeCount = QRCode::where('user_id', $user->id)->count();
+            $vCardCount = VCard::where('user_id', $user->id)->count();
+            
             $stats = [
-                'my_items' => QRCode::where('user_id', $user->id)->count(),
+                'my_items' => $qrCodeCount + $vCardCount, // Total QR codes + vCards
                 'active_items' => QRCode::where('user_id', $user->id)->where('status', 'active')->count(),
                 'found_items' => QRCode::where('user_id', $user->id)->where('status', 'found')->count(),
+                'happy_customers' => Review::where('is_approved', true)->count(), // Overall happy customers
             ];
         }
 

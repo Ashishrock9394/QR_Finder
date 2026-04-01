@@ -101,4 +101,17 @@ class QRCodeController extends Controller
 
         return response()->json($qrCode);
     }
+
+    /**
+     * Get the current user's QR codes
+     */
+    public function myQRCodes()
+    {
+        $user = Auth::user();
+        $qrCodes = QRCode::where('user_id', $user->id)
+            ->latest()
+            ->get();
+
+        return response()->json($qrCodes);
+    }
 }

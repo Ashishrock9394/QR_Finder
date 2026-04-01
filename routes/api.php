@@ -32,6 +32,8 @@ Route::middleware(['redirect.unauth', 'auth:sanctum', SanctumTimeout::class])->g
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::apiResource('qr-codes', QRCodeController::class);
+    Route::get('/my-qr-codes', [QRCodeController::class, 'myQRCodes']);
+    Route::get('/my-vcards', [VCardController::class, 'myVCards']);
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 
     Route::put('/user/profile', [UserController::class, 'updateProfile']);

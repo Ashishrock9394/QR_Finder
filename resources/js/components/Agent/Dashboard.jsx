@@ -7,22 +7,40 @@ import { useAuth } from '../../context/AuthContext'; // Import useAuth hook
 const Dashboard = () => {
     const [stats, setStats] = useState({});
     const [recentQRCodes, setRecentQRCodes] = useState([]);
+    const [myQRCodes, setMyQRCodes] = useState([]);
+    const [myVCards, setMyVCards] = useState([]);
     const [loading, setLoading] = useState(true);
     const { user } = useAuth(); // Use the useAuth hook here
 
     useEffect(() => {
         fetchDashboardData();
-    }, []);
+    }, [user?.role]);
 
     const fetchDashboardData = async () => {
         try {
-            const [statsResponse, qrCodesResponse] = await Promise.all([
+            const requests = [
                 axios.get('/api/dashboard/stats'),
                 axios.get('/api/qr-codes')
-            ]);
+            ];
+
+            // For users, also fetch their QR codes and vCards
+            if (user?.role === 'user') {
+                requests.push(
+                    axios.get('/api/my-qr-codes'),
+                    axios.get('/api/my-vcards')
+                );
+            }
+
+            const responses = await Promise.all(requests);
             
-            setStats(statsResponse.data);
-            setRecentQRCodes(qrCodesResponse.data.slice(0, 5));
+            setStats(responses[0].data);
+            setRecentQRCodes(responses[1].data.slice(0, 5));
+
+            // Set user-specific data
+            if (user?.role === 'user') {
+                setMyQRCodes(responses[2].data || []);
+                setMyVCards(responses[3].data || []);
+            }
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
         } finally {
@@ -147,6 +165,112 @@ const Dashboard = () => {
                                         </table>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* User's QR Codes Section */}
+            {user?.role === 'user' && (
+                <div className="row mb-4">
+                    <div className="col-lg-6">
+                        <div className="card h-100">
+                            <div className="card-header bg-primary text-white">
+                                <h5 className="card-title mb-0">
+                                    <i className="bi bi-qr-code me-2"></i>
+                                    My QR Codes
+                                </h5>
+                            </div>
+                            <div className="card-body">
+                                {myQRCodes.length === 0 ? (
+                                    <div className="text-center py-5">
+                                        <i className="bi bi-qr-code display-4 text-muted"></i>
+                                        <p className="text-muted mt-3">No QR codes created yet</p>
+                                        <a href="/qr-codes/create" className="btn btn-primary btn-sm">
+                                            <i className="bi bi-plus-circle me-2"></i>Create QR Code
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <div className="list-group">
+                                        {myQRCodes.map(qr => (
+                                            <div key={qr.id} className="list-group-item">
+                                                <div className="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <h6 className="mb-1">{qr.name || 'Unnamed QR Code'}</h6>
+                                                        <small className="text-muted">
+                                                            <code>{qr.qr_code || qr.code}</code>
+                                                        </small>
+                                                        <br />
+                                                        <small className="text-muted">
+                                                            Created: {new Date(qr.created_at).toLocaleDateString()}
+                                                        </small>
+                                                    </div>
+                                                    <span className={`badge ${
+                                                        qr.status === 'active' ? 'bg-success' :
+                                                        qr.status === 'inactive' ? 'bg-secondary' : 'bg-warning'
+                                                    }`}>
+                                                        {qr.status || 'Active'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="card-footer bg-light">
+                                <a href="/qr-codes" className="btn btn-outline-primary btn-sm w-100">
+                                    View All QR Codes
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* User's vCards Section */}
+                    <div className="col-lg-6">
+                        <div className="card h-100">
+                            <div className="card-header bg-info text-white">
+                                <h5 className="card-title mb-0">
+                                    <i className="bi bi-person-vcard me-2"></i>
+                                    My Visiting Cards
+                                </h5>
+                            </div>
+                            <div className="card-body">
+                                {myVCards.length === 0 ? (
+                                    <div className="text-center py-5">
+                                        <i className="bi bi-person-vcard display-4 text-muted"></i>
+                                        <p className="text-muted mt-3">No vCards created yet</p>
+                                        <a href="/vcards/create" className="btn btn-info btn-sm">
+                                            <i className="bi bi-plus-circle me-2"></i>Create vCard
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <div className="list-group">
+                                        {myVCards.map(vcard => (
+                                            <div key={vcard.id} className="list-group-item">
+                                                <div className="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <h6 className="mb-1">{vcard.name || 'Unnamed vCard'}</h6>
+                                                        <small className="text-muted">
+                                                            {vcard.mobile && <>{vcard.mobile}<br /></>}
+                                                            {vcard.email && <>{vcard.email}</>}
+                                                        </small>
+                                                        <br />
+                                                        <small className="text-muted">
+                                                            Created: {new Date(vcard.created_at).toLocaleDateString()}
+                                                        </small>
+                                                    </div>
+                                                    <span className="badge bg-info">vCard</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="card-footer bg-light">
+                                <a href="/my-card" className="btn btn-outline-info btn-sm w-100">
+                                    View All vCards
+                                </a>
                             </div>
                         </div>
                     </div>
