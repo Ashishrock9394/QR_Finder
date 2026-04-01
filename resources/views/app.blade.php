@@ -9,6 +9,11 @@
     
     <!-- Vite asset loading -->
     @vite(['resources/css/app.css', 'resources/js/app.jsx'])
+    
+    <!-- Disable MCP Logger to prevent console errors -->
+    <script>
+        window.__MCP_DISABLED__ = true;
+    </script>
 </head>
 <body>
     <div id="app"></div>

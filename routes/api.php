@@ -1,16 +1,18 @@
 <?php
+
 // routes/api.php
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\OTPController;
-use App\Http\Controllers\QRCodeController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\AdminController;
-use App\Http\Controllers\VCardController;
+use App\Http\Controllers\OTPController;
 use App\Http\Controllers\PaymentController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\QRCodeController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\VCardController;
 use App\Http\Middleware\SanctumTimeout;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -50,6 +52,13 @@ Route::middleware(['redirect.unauth', 'auth:sanctum', SanctumTimeout::class])->g
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+
+    // Chat routes
+    Route::prefix('chat')->group(function () {
+        Route::post('/send', [ChatController::class, 'sendMessage']);
+        Route::get('/history', [ChatController::class, 'getHistory']);
+        Route::post('/clear-history', [ChatController::class, 'clearHistory']);
+    });
 
     Route::prefix('admin')->group(function () {
         Route::get('/dashboard/stats', [AdminController::class, 'stats']);

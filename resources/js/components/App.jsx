@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import MainLayout from './Layout/MainLayout';
+import Chatbot from './Chatbot';
 import Homepage from './Home/Homepage';
 import About from './Home/About';
 import Contact from './Home/Contact';
@@ -37,62 +38,65 @@ const App = () => {
     };
 
     return (
-        <Routes>
-            {/* Wrap all pages in MainLayout */}
-            <Route element={<MainLayout />}>
-                <Route path="/" element={<Homepage />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
-                <Route path="/login/otp" element={!user ? <OTPLogin /> : <Navigate to="/dashboard" />} />
-                <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
-                <Route path="/v-cards/:id" element={<CardDetailPage />} />
-                
-                <Route path="/dashboard" element={
-                    <ProtectedRoute>
-                        <Dashboard />
-                    </ProtectedRoute>
-                } />
-                
-                <Route path="/issue-qr" element={
-                    <ProtectedRoute roles={['agent', 'admin']}>
-                        <IssueQR />
-                    </ProtectedRoute>
-                } />
-                
-                <Route path="/admin" element={
-                    <ProtectedRoute roles={['admin']}>
-                        <AdminPanel />
-                    </ProtectedRoute>
-                } />
-                
-                <Route path="/profile" element={
-                    <ProtectedRoute>
-                        <UserProfile />
-                    </ProtectedRoute>
-                } />
-                
-                <Route path="/my-items" element={
-                    <ProtectedRoute>
-                        <MyItems />
-                    </ProtectedRoute>
-                } />
-                
-                <Route path="/my-card" element={
-                    <ProtectedRoute>
-                        <MyCard />
-                    </ProtectedRoute>
-                } />
-                
-                <Route path="/payment/:cardId" element={
-                    <ProtectedRoute>
-                        <PaymentPage />
-                    </ProtectedRoute>
-                } />
+        <>
+            <Routes>
+                {/* Wrap all pages in MainLayout */}
+                <Route element={<MainLayout />}>
+                    <Route path="/" element={<Homepage />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+                    <Route path="/login/otp" element={!user ? <OTPLogin /> : <Navigate to="/dashboard" />} />
+                    <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
+                    <Route path="/v-cards/:id" element={<CardDetailPage />} />
+                    
+                    <Route path="/dashboard" element={
+                        <ProtectedRoute>
+                            <Dashboard />
+                        </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/issue-qr" element={
+                        <ProtectedRoute roles={['agent', 'admin']}>
+                            <IssueQR />
+                        </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/admin" element={
+                        <ProtectedRoute roles={['admin']}>
+                            <AdminPanel />
+                        </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/profile" element={
+                        <ProtectedRoute>
+                            <UserProfile />
+                        </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/my-items" element={
+                        <ProtectedRoute>
+                            <MyItems />
+                        </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/my-card" element={
+                        <ProtectedRoute>
+                            <MyCard />
+                        </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/payment/:cardId" element={
+                        <ProtectedRoute>
+                            <PaymentPage />
+                        </ProtectedRoute>
+                    } />
 
-                <Route path="*" element={<Navigate to="/" />} />
-            </Route>
-        </Routes>
+                    <Route path="*" element={<Navigate to="/" />} />
+                </Route>
+            </Routes>
+            <Chatbot />
+        </>
     );
 };
 
