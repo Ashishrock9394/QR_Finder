@@ -10,27 +10,18 @@ const PaymentPage = () => {
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState(null);
+    const [statusMessage, setStatusMessage] = useState(null);
 
     const FIXED_AMOUNT = 29;
 
-    // Check environment variable
-    const ENV_UPI = import.meta.env.VITE_MERCHANT_UPI;
+    // Razorpay checkout requires API key in server config
+    const razorpayCheckoutProviderUrl = import.meta.env.VITE_RAZORPAY_LINK || null;
 
-    const isRazorpayLink =
-        ENV_UPI && ENV_UPI.startsWith('http');
+    // no UPI fallback - Razorpay only
+    const isRazorpayLink = Boolean(razorpayCheckoutProviderUrl);
 
-    const FALLBACK_UPI = '9198552556@ybl';
-
-    const MERCHANT_UPI = isRazorpayLink
-        ? ENV_UPI
-        : ENV_UPI || FALLBACK_UPI;
-
-    // UPI Deep Link (for QR)
-    const upiDeepLink = `upi://pay?pa=${MERCHANT_UPI}&pn=QR%20Finder&am=${FIXED_AMOUNT}&cu=INR`;
-
-    // Razorpay.me URL with amount
     const razorpayRedirectUrl = isRazorpayLink
-        ? `${MERCHANT_UPI}`
+        ? razorpayCheckoutProviderUrl
         : null;
 
     // Fetch card details
@@ -128,24 +119,16 @@ const PaymentPage = () => {
                             onClick={async () => {
                                 setProcessing(true);
                                 setError(null);
+                                setStatusMessage(null);
                                 try {
-                                    // Try server-backed checkout first. If order creation or checkout fails
-                                    // and merchant provided a razorpay.me link, open that as a last resort.
-
-                                    // Create order on server
+                                    // Razorpay-only checkout: create order on server
                                     const createRes = await axios.post('/api/payments/create-order', {
                                         vcard_id: card.id,
                                         amount: FIXED_AMOUNT,
                                     });
 
                                     if (!createRes.data || !createRes.data.order_id) {
-                                        // fallback to merchant link if available
-                                        if (isRazorpayLink && razorpayRedirectUrl) {
-                                            window.open(razorpayRedirectUrl, '_blank');
-                                            setProcessing(false);
-                                            return;
-                                        }
-                                        throw new Error('Failed to create order');
+                                        throw new Error('Failed to create Razorpay order');
                                     }
 
                                     const { order_id: orderId, key_id: keyId } = createRes.data;
@@ -168,26 +151,33 @@ const PaymentPage = () => {
                                         name: 'QR Finder',
                                         description: `Payment for vcard ${card.name}`,
                                         order_id: orderId,
-                                        handler: async function (response) {
-                                            try {
-                                                // Verify payment on server
-                                                const verifyRes = await axios.post('/api/payments/verify', {
+                                        handler: function (response) {
+                                            // Razorpay has accepted entry; rely on webhook to finalize payment status.
+                                            setCard((prev) => ({ ...prev, payment_status: 'pending' }));
+                                            setStatusMessage('Payment processed by Razorpay. Awaiting webhook confirmation...');
+                                            setError(null);
+
+                                            // Optionally try immediate verify for quicker UX, fallback to webhook
+                                            axios
+                                                .post('/api/payments/verify', {
                                                     razorpay_order_id: response.razorpay_order_id,
                                                     razorpay_payment_id: response.razorpay_payment_id,
                                                     razorpay_signature: response.razorpay_signature,
                                                     vcard_id: card.id,
+                                                })
+                                                .then((verifyRes) => {
+                                                    if (verifyRes.data && verifyRes.data.success) {
+                                                        setCard((prev) => ({ ...prev, payment_status: 'paid' }));
+                                                        setStatusMessage('Payment verified successfully. Redirecting...');
+                                                        navigate('/my-card');
+                                                    } else {
+                                                        setStatusMessage('Payment received, waiting for webhook to mark as complete.');
+                                                    }
+                                                })
+                                                .catch((err) => {
+                                                    console.error('Immediate verification failed, waiting for webhook', err);
+                                                    setStatusMessage('Waiting for webhook confirmation from Razorpay...');
                                                 });
-
-                                                if (verifyRes.data && verifyRes.data.success) {
-                                                    setCard((prev) => ({ ...prev, payment_status: 'paid' }));
-                                                    navigate('/my-card');
-                                                } else {
-                                                    setError('Payment verification failed');
-                                                }
-                                            } catch (err) {
-                                                console.error('Verification error', err);
-                                                setError('Payment verification failed');
-                                            }
                                         },
                                         modal: {
                                             ondismiss: async function () {
@@ -207,21 +197,23 @@ const PaymentPage = () => {
 
                                 } catch (err) {
                                     console.error(err);
-                                    // If server-side flow fails, fallback to razorpay.me link if provided
-                                    if (isRazorpayLink && razorpayRedirectUrl) {
-                                        window.open(razorpayRedirectUrl, '_blank');
-                                    } else {
-                                        setError(err.message || 'Payment failed');
-                                    }
+                                    setError(err.response?.data?.message || err.message || 'Payment failed. Please try again.');
                                 } finally {
                                     setProcessing(false);
                                 }
                             }}
                             disabled={processing}
                         >
-                            {processing ? 'Processing…' : 'Pay via Razorpay'}
+                            {processing ? 'Processing…' : 'Pay Now'}
                         </button>
                     </div>
+
+                    {error && (
+                        <p className="text-danger mt-3">{error}</p>
+                    )}
+                    {statusMessage && (
+                        <p className="text-success mt-3">{statusMessage}</p>
+                    )}
 
                     <button
                         className="btn btn-light mt-4 w-100"
