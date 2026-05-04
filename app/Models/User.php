@@ -23,8 +23,6 @@ class User extends Authenticatable
         'password',
         'role',
         'mobile',
-        'otp',
-        'otp_expires_at',
     ];
 
     /**
@@ -47,7 +45,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'otp_expires_at' => 'datetime',
         ];
     }
 
@@ -64,6 +61,11 @@ class User extends Authenticatable
     public function notifications()
     {
         return $this->hasMany(Notification::class);
+    }
+
+    public function otps()
+    {
+        return $this->hasMany(OTP::class);
     }
 
     public function reviews()

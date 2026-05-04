@@ -17,9 +17,14 @@ class CardTemplates extends Model
         'settings',
     ];
 
-    protected $casts = [
-        'settings' => 'array', // JSON automatically cast to array
-    ];
+    protected function casts(): array
+    {
+        return [
+            'settings' => 'array',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+        ];
+    }
 
     public function cards()
     {

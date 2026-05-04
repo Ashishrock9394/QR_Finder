@@ -1,6 +1,7 @@
 // resources/js/context/AuthContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // Add this import for navigation
 
 const AuthContext = createContext();
 
@@ -10,6 +11,7 @@ axios.defaults.headers.common['Content-Type'] = 'application/json';
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate(); // Hook for navigation
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -36,6 +38,19 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', token);
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         setUser(user);
+        navigate('/dashboard');
+
+        return user;
+    };
+
+    const verifyOTP = async (otpData) => {
+        const res = await axios.post('/api/verify-otp', otpData);
+        const { token, user } = res.data;
+
+        localStorage.setItem('token', token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        setUser(user);
+        navigate('/dashboard'); 
 
         return user;
     };
@@ -52,10 +67,11 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('token');
         delete axios.defaults.headers.common['Authorization'];
         setUser(null);
+        navigate('/login');
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+        <AuthContext.Provider value={{ user, loading, login, register, logout, verifyOTP }}>
             {children}
         </AuthContext.Provider>
     );

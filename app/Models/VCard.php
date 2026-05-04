@@ -30,9 +30,14 @@ class VCard extends Model
         'paid_at',
     ];
 
-    protected $casts = [
-        'paid_at' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'paid_at' => 'datetime',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+        ];
+    }
 
     public function template()
     {

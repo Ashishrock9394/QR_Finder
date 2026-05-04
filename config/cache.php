@@ -114,4 +114,18 @@ return [
 
     'prefix' => env('CACHE_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-cache-'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Cache Serialization
+    |--------------------------------------------------------------------------
+    |
+    | When utilizing the database, memcached, Redis, and DynamoDB cache
+    | stores, you may serialize objects being cached. However, for security
+    | reasons, you must explicitly allow which objects can be unserialized
+    | to prevent PHP deserialization gadget chain attacks.
+    |
+    */
+
+    'serializable_classes' => false,
+
 ];

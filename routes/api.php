@@ -19,6 +19,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/send-otp', [OTPController::class, 'sendOTP']);
 Route::post('/verify-otp', [OTPController::class, 'verifyOTP']);
+
 Route::get('/v-cards/{card}', [VCardController::class, 'show'])->name('show.visiting.card');
 
 Route::get('/qr-codes/public/{qrCode}', [QRCodeController::class, 'getByQRCode']);
@@ -27,10 +28,9 @@ Route::get('/qr-codes/public/{qrCode}', [QRCodeController::class, 'getByQRCode']
 Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook']);
 
 Route::middleware(['redirect.unauth', 'auth:sanctum', SanctumTimeout::class])->group(function () {
-
     Route::get('/user', fn (Request $request) => $request->user());
     Route::post('/logout', [AuthController::class, 'logout']);
-
+    
     Route::apiResource('qr-codes', QRCodeController::class);
     Route::get('/my-qr-codes', [QRCodeController::class, 'myQRCodes']);
     Route::get('/my-vcards', [VCardController::class, 'myVCards']);

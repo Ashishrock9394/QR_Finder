@@ -11,6 +11,7 @@ const OTPLogin = () => {
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
 
+    // Handle sending OTP
     const handleSendOTP = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -25,6 +26,7 @@ const OTPLogin = () => {
         setLoading(false);
     };
 
+    // Handle verifying OTP
     const handleVerifyOTP = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -35,6 +37,7 @@ const OTPLogin = () => {
             
             localStorage.setItem('token', token);
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            setMessage('');
             navigate('/dashboard');
         } catch (error) {
             setMessage('Invalid or expired OTP. Please try again.');

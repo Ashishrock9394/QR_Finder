@@ -21,9 +21,14 @@ class Payment extends Model
         'metadata',
     ];
 
-    protected $casts = [
-        'metadata' => 'array',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'metadata' => 'array',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+        ];
+    }
 
     public function user()
     {
