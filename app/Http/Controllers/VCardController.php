@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\VCard;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class VCardController extends Controller
@@ -13,7 +13,8 @@ class VCardController extends Controller
     // List all visiting cards
     public function index(Request $request)
     {
-        $cards = VCard::where('user_id', $request->user()->id)
+        $cards = VCard::with('template')
+            ->where('user_id', $request->user()->id)
             ->latest()
             ->get();
 
@@ -22,13 +23,15 @@ class VCardController extends Controller
 
     // Show single card
     public function show($qr_code)
-    {   
-        $card = VCard::where('qr_code', $qr_code)->firstOrFail();
+    {
+        $card = VCard::with('template')->where('qr_code', $qr_code)->firstOrFail();
+
         return response()->json($card);
     }
 
     // Create new card
-    public function store(Request $request){
+    public function store(Request $request)
+    {
         $data = $this->validateData($request);
 
         // Handle file uploads
@@ -38,11 +41,14 @@ class VCardController extends Controller
         $qrCode = Str::uuid()->toString();
         $qrFileName = "v_cards/qrs/{$qrCode}.svg";
         $qrDirectory = storage_path('app/public/v_cards/qrs');
-        if (!file_exists($qrDirectory)) mkdir($qrDirectory, 0755, true);
+        if (! file_exists($qrDirectory)) {
+            mkdir($qrDirectory, 0755, true);
+        }
 
         $card = VCard::create([
             'user_id' => $request->user()->id,
             ...$data,
+            'template_id' => $data['template_id'] ?? null,
             'qr_code' => $qrCode,
             'qr_image' => $qrFileName,
         ]);
@@ -51,11 +57,12 @@ class VCardController extends Controller
             ->format('svg')
             ->generate(url("/v-cards/{$qrCode}"), storage_path("app/public/{$qrFileName}"));
 
-        return response()->json($card, 201);
+        return response()->json($card->load('template'), 201);
     }
 
     // Update card
-    public function update(Request $request, $id){
+    public function update(Request $request, $id)
+    {
 
         $card = VCard::where('user_id', $request->user()->id)->findOrFail($id);
         $data = $this->validateData($request);
@@ -84,7 +91,9 @@ class VCardController extends Controller
         $qrCode = Str::uuid()->toString();
         $qrFileName = "v_cards/qrs/{$qrCode}.svg";
         $qrDirectory = storage_path('app/public/v_cards/qrs');
-        if (!file_exists($qrDirectory)) mkdir($qrDirectory, 0755, true);
+        if (! file_exists($qrDirectory)) {
+            mkdir($qrDirectory, 0755, true);
+        }
 
         QrCode::size(300)
             ->format('svg')
@@ -98,12 +107,12 @@ class VCardController extends Controller
         // Save new QR data
         $data['qr_code'] = $qrCode;
         $data['qr_image'] = $qrFileName;
+        $data['template_id'] = $data['template_id'] ?? $card->template_id;
 
         $card->update($data);
-        return response()->json($card, 201);
+
+        return response()->json($card->load('template'), 201);
     }
-
-
 
     /**
      * Validate card data
@@ -111,6 +120,7 @@ class VCardController extends Controller
     private function validateData(Request $request)
     {
         return $request->validate([
+            'template_id' => 'nullable|exists:card_templates,id',
             'name' => 'required|string|max:255',
             'designation' => 'nullable|string|max:255',
             'company_name' => 'nullable|string|max:255',
@@ -126,27 +136,37 @@ class VCardController extends Controller
     /**
      * Handle file uploads (logo/photo)
      */
-    private function handleFiles(Request $request, array $data, VCard $card = null)
+    private function handleFiles(Request $request, array $data, ?VCard $card = null)
     {
         if ($request->hasFile('logo')) {
-            if ($card && $card->logo) Storage::disk('public')->delete($card->logo);
+            if ($card && $card->logo) {
+                Storage::disk('public')->delete($card->logo);
+            }
             $data['logo'] = $request->file('logo')->store('v_cards/logos', 'public');
         }
 
         if ($request->hasFile('photo')) {
-            if ($card && $card->photo) Storage::disk('public')->delete($card->photo);
+            if ($card && $card->photo) {
+                Storage::disk('public')->delete($card->photo);
+            }
             $data['photo'] = $request->file('photo')->store('v_cards/photos', 'public');
         }
 
         return $data;
     }
 
-
-    public function destroy(Request $request, $id){
+    public function destroy(Request $request, $id)
+    {
         $card = VCard::where('user_id', $request->user()->id)->findOrFail($id);
-        if ($card->logo) Storage::disk('public')->delete($card->logo);
-        if ($card->photo) Storage::disk('public')->delete($card->photo);
-        if ($card->qr_image) Storage::disk('public')->delete($card->qr_image);
+        if ($card->logo) {
+            Storage::disk('public')->delete($card->logo);
+        }
+        if ($card->photo) {
+            Storage::disk('public')->delete($card->photo);
+        }
+        if ($card->qr_image) {
+            Storage::disk('public')->delete($card->qr_image);
+        }
 
         $card->delete();
 
@@ -158,7 +178,8 @@ class VCardController extends Controller
      */
     public function myVCards(Request $request)
     {
-        $vCards = VCard::where('user_id', $request->user()->id)
+        $vCards = VCard::with('template')
+            ->where('user_id', $request->user()->id)
             ->latest()
             ->get();
 

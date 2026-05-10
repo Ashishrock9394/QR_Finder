@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class OTP extends Model
 {
@@ -17,6 +17,7 @@ class OTP extends Model
         'code',
         'attempts',
         'blocked_until',
+        'resend_count',
     ];
 
     protected function casts(): array
@@ -25,6 +26,7 @@ class OTP extends Model
             'blocked_until' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
+            'resend_count' => 'integer',
         ];
     }
 
@@ -45,7 +47,7 @@ class OTP extends Model
 
     public function canAttempt(): bool
     {
-        return !$this->isBlocked() && !$this->isExpired() && $this->attempts < 3;
+        return ! $this->isBlocked() && ! $this->isExpired() && $this->attempts < 3;
     }
 
     public function incrementAttempt(): void
@@ -60,7 +62,7 @@ class OTP extends Model
     public static function getLatestForEmail(string $email)
     {
         return static::where('email', $email)
-            ->latest()
+            ->orderBy('id', 'desc')
             ->first();
     }
 
@@ -68,7 +70,7 @@ class OTP extends Model
     {
         $otpRecord = static::getLatestForEmail($email);
 
-        if (!$otpRecord) {
+        if (! $otpRecord) {
             return ['canSend' => true];
         }
 

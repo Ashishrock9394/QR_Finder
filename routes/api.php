@@ -19,6 +19,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/send-otp', [OTPController::class, 'sendOTP']);
 Route::post('/verify-otp', [OTPController::class, 'verifyOTP']);
+Route::get('/card-templates', [AdminController::class, 'cardTemplates']);
 
 Route::get('/v-cards/{card}', [VCardController::class, 'show'])->name('show.visiting.card');
 
@@ -30,7 +31,7 @@ Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook']);
 Route::middleware(['redirect.unauth', 'auth:sanctum', SanctumTimeout::class])->group(function () {
     Route::get('/user', fn (Request $request) => $request->user());
     Route::post('/logout', [AuthController::class, 'logout']);
-    
+
     Route::apiResource('qr-codes', QRCodeController::class);
     Route::get('/my-qr-codes', [QRCodeController::class, 'myQRCodes']);
     Route::get('/my-vcards', [VCardController::class, 'myVCards']);
@@ -66,6 +67,8 @@ Route::middleware(['redirect.unauth', 'auth:sanctum', SanctumTimeout::class])->g
         Route::get('/dashboard/stats', [AdminController::class, 'stats']);
         Route::get('/agents', [AdminController::class, 'agents']);
         Route::get('/users', [AdminController::class, 'users']);
+        Route::get('/card-templates', [AdminController::class, 'cardTemplates']);
+        Route::post('/card-templates', [AdminController::class, 'storeCardTemplate']);
         Route::patch('/user/{id}/status', [AdminController::class, 'updateStatus']);
     });
 });

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
 
 const OTPLogin = () => {
     const [step, setStep] = useState(1);
@@ -9,7 +10,9 @@ const OTPLogin = () => {
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
+    const [remainingResends, setRemainingResends] = useState(1);
     const navigate = useNavigate();
+    const { verifyOTP } = useAuth();
 
     // Handle sending OTP
     const handleSendOTP = async (e) => {
@@ -18,11 +21,34 @@ const OTPLogin = () => {
         setMessage('');
         try {
             const response = await axios.post('/api/send-otp', { email });
-            setMessage('OTP sent successfully! Check your email.');
+            setMessage(response.data.message || 'OTP sent successfully! Check your email.');
+            setRemainingResends(response.data.remaining_resends ?? 1);
             setStep(2);
         } catch (error) {
-            setMessage('Error sending OTP. Please try again.');
+            setMessage(error.response?.data?.error || 'Error sending OTP. Please try again.');
+            setRemainingResends(error.response?.data?.remaining_resends ?? remainingResends);
         }
+        setLoading(false);
+    };
+
+    const handleResendOTP = async () => {
+        if (!email) {
+            setMessage('Enter your email first.');
+            return;
+        }
+
+        setLoading(true);
+        setMessage('');
+
+        try {
+            const response = await axios.post('/api/send-otp', { email });
+            setMessage(response.data.message || 'OTP resent successfully. Check your email.');
+            setRemainingResends(response.data.remaining_resends ?? 0);
+        } catch (error) {
+            setMessage(error.response?.data?.error || 'Unable to resend OTP.');
+            setRemainingResends(error.response?.data?.remaining_resends ?? 0);
+        }
+
         setLoading(false);
     };
 
@@ -32,13 +58,7 @@ const OTPLogin = () => {
         setLoading(true);
         setMessage('');
         try {
-            const response = await axios.post('/api/verify-otp', { email, otp });
-            const { user, token } = response.data;
-            
-            localStorage.setItem('token', token);
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            setMessage('');
-            navigate('/dashboard');
+            await verifyOTP({ email, otp });
         } catch (error) {
             setMessage('Invalid or expired OTP. Please try again.');
         }
@@ -131,11 +151,20 @@ const OTPLogin = () => {
                                     </button>
                                     <button 
                                         type="button" 
+                                        className="btn btn-outline-primary w-100 mb-3"
+                                        onClick={handleResendOTP}
+                                        disabled={loading || remainingResends <= 0}
+                                    >
+                                        {remainingResends > 0 ? 'Resend OTP' : 'Resend limit reached'}
+                                    </button>
+                                    <button 
+                                        type="button" 
                                         className="btn btn-outline-secondary w-100"
                                         onClick={() => {
                                             setStep(1);
                                             setMessage('');
                                             setOtp('');
+                                            setRemainingResends(1);
                                         }}
                                     >
                                         Change Email

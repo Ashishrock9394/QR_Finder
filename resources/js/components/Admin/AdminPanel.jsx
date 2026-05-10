@@ -10,12 +10,23 @@ const AdminPanel = () => {
     const [stats, setStats] = useState({});
     const [agents, setAgents] = useState([]);
     const [users, setUsers] = useState([]);
+    const [templates, setTemplates] = useState([]);
+    const [templateForm, setTemplateForm] = useState({
+        name: '',
+        template_key: '',
+        description: '',
+        thumbnail: '',
+        html: '',
+    });
+    const [templateSaving, setTemplateSaving] = useState(false);
+    const [templateError, setTemplateError] = useState('');
     const [activeTab, setActiveTab] = useState('overview');
     const [loading, setLoading] = useState(true);
     const [qrCodeCount, setQrCodeCount] = useState(10);
 
     useEffect(() => {
         fetchAdminData();
+        fetchTemplates();
     }, []);
 
     const generateQRCodePDF = async () => {
@@ -65,6 +76,59 @@ const AdminPanel = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchTemplates = async () => {
+        try {
+            const response = await axios.get('/api/card-templates');
+            setTemplates(response.data || []);
+        } catch (error) {
+            console.error('Error fetching card templates:', error);
+        }
+    };
+
+    const handleTemplateInputChange = (e) => {
+        const { name, value } = e.target;
+        setTemplateForm((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleTemplateSubmit = async (e) => {
+        e.preventDefault();
+        setTemplateSaving(true);
+        setTemplateError('');
+
+        try {
+            await axios.post('/api/admin/card-templates', templateForm);
+            await fetchTemplates();
+            setTemplateForm({ name: '', template_key: '', description: '', thumbnail: '', html: '' });
+            Swal.fire('Saved', 'Template has been added successfully.', 'success');
+        } catch (error) {
+            const message = error.response?.data?.error || error.response?.data?.message || 'Unable to save template.';
+            setTemplateError(message);
+        } finally {
+            setTemplateSaving(false);
+        }
+    };
+
+    const renderTemplatePreview = (html) => {
+        if (!html) {
+            return '<div class="text-muted p-3">Enter template HTML to preview a sample layout.</div>';
+        }
+
+        const values = {
+            name: 'Jane Doe',
+            designation: 'Creative Director',
+            company_name: 'Acme Innovations',
+            mobile: '+1 555 123 4567',
+            email: 'jane.doe@example.com',
+            website: 'https://example.com',
+            address: '123 Main Street, Cityville',
+            logo: '<div style="width: 80px; height: 80px; background: #eee; display:flex; align-items:center; justify-content:center; color:#999; font-size:12px; border-radius:12px;">Logo</div>',
+            photo: '<div style="width: 80px; height: 80px; background: #eee; display:flex; align-items:center; justify-content:center; color:#999; font-size:12px; border-radius:50%;">Photo</div>',
+            qr_image: '<div style="width: 120px; height: 120px; background: #eee; display:flex; align-items:center; justify-content:center; color:#999; font-size:12px;">QR</div>',
+        };
+
+        return html.replace(/{{\s*(\w+)\s*}}/g, (_, key) => values[key] || '');
     };
 
     const toggleStatus = async (user) => {
@@ -244,6 +308,16 @@ const AdminPanel = () => {
                                     >
                                         <i className="bi bi-gear me-2"></i>
                                         Settings
+                                    </button>
+                                </li>
+
+                                <li className="nav-item">
+                                    <button 
+                                        className={`nav-link ${activeTab === 'templates' ? 'active' : ''}`}
+                                        onClick={() => setActiveTab('templates')}
+                                    >
+                                        <i className="bi bi-layout-text-window-reverse me-2"></i>
+                                        Templates
                                     </button>
                                 </li>
 
@@ -527,6 +601,116 @@ const AdminPanel = () => {
                                                     <button className="btn btn-primary">Update Notifications</button>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'templates' && (
+                                <div>
+                                    <h5>Visiting Card Templates</h5>
+                                    <div className="row">
+                                        <div className="col-lg-6 mb-4">
+                                            <div className="card h-100">
+                                                <div className="card-header">
+                                                    <h6 className="mb-0">Add New Template</h6>
+                                                </div>
+                                                <div className="card-body">
+                                                    {templateError && (
+                                                        <div className="alert alert-danger">{templateError}</div>
+                                                    )}
+
+                                                    <form onSubmit={handleTemplateSubmit}>
+                                                        <div className="mb-3">
+                                                            <label className="form-label">Template Name</label>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control"
+                                                                name="name"
+                                                                value={templateForm.name}
+                                                                onChange={handleTemplateInputChange}
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div className="mb-3">
+                                                            <label className="form-label">Template Key</label>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control"
+                                                                name="template_key"
+                                                                value={templateForm.template_key}
+                                                                onChange={handleTemplateInputChange}
+                                                                placeholder="Optional, will be generated from name"
+                                                            />
+                                                        </div>
+                                                        <div className="mb-3">
+                                                            <label className="form-label">Description</label>
+                                                            <textarea
+                                                                className="form-control"
+                                                                name="description"
+                                                                rows="2"
+                                                                value={templateForm.description}
+                                                                onChange={handleTemplateInputChange}
+                                                            />
+                                                        </div>
+                                                        <div className="mb-3">
+                                                            <label className="form-label">Template HTML</label>
+                                                            <textarea
+                                                                className="form-control"
+                                                                name="html"
+                                                                rows="8"
+                                                                value={templateForm.html}
+                                                                onChange={handleTemplateInputChange}
+                                                                placeholder="Use placeholders like {{name}}, {{designation}}, {{company_name}}, {{mobile}}, {{email}}, {{website}}, {{address}}, {{qr_image}}"
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <button type="submit" className="btn btn-primary" disabled={templateSaving}>
+                                                            {templateSaving ? 'Saving...' : 'Save Template'}
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="col-lg-6 mb-4">
+                                            <div className="card h-100">
+                                                <div className="card-header">
+                                                    <h6 className="mb-0">Template Preview</h6>
+                                                </div>
+                                                <div className="card-body">
+                                                    <div
+                                                        className="template-preview"
+                                                        dangerouslySetInnerHTML={{ __html: renderTemplatePreview(templateForm.html) }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="card">
+                                        <div className="card-header">
+                                            <h6 className="mb-0">Existing Templates</h6>
+                                        </div>
+                                        <div className="card-body">
+                                            {templates.length === 0 ? (
+                                                <p className="text-muted">No templates available yet.</p>
+                                            ) : (
+                                                <div className="row">
+                                                    {templates.map((template) => (
+                                                        <div key={template.id} className="col-md-6 mb-3">
+                                                            <div className="border rounded p-3 h-100">
+                                                                <h6>{template.name}</h6>
+                                                                <p className="text-muted small mb-2">{template.description || 'No description'}</p>
+                                                                <div className="small text-muted mb-2">Key: {template.template_key}</div>
+                                                                <div className="text-truncate" style={{ maxHeight: '120px', overflow: 'hidden' }}>
+                                                                    <pre className="small">{template.html}</pre>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

@@ -1,12 +1,15 @@
 <?php
+
 // app/Http/Controllers/AdminController.php
+
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Models\CardTemplate;
 use App\Models\QRCode;
+use App\Models\User;
 use App\Models\VCard;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
@@ -40,37 +43,66 @@ class AdminController extends Controller
 
         $agents = $agents->map(function ($agent) {
             $agent->qr_issued = $agent->qr_codes()->count();
-            $agent->items_found = $agent->qr_codes()->where('status', 'found')->count(); 
-            $agent->success_rate = $agent->qr_issued > 0 
-                ? round(($agent->items_found / $agent->qr_issued) * 100, 2) 
+            $agent->items_found = $agent->qr_codes()->where('status', 'found')->count();
+            $agent->success_rate = $agent->qr_issued > 0
+                ? round(($agent->items_found / $agent->qr_issued) * 100, 2)
                 : 0;
+
             return $agent;
         });
 
         return response()->json($agents);
     }
 
-    
     public function users()
     {
         $users = User::where('role', 'user')
             ->select('id', 'name', 'email', 'role', 'status', 'created_at')
             ->get();
 
-        
         $users = $users->map(function ($user) {
-            $user->registered_items = $user->qr_codes()->count(); 
+            $user->registered_items = $user->qr_codes()->count();
+
             return $user;
         });
 
         return response()->json($users);
     }
 
-    
+    public function cardTemplates()
+    {
+        $templates = CardTemplate::orderBy('name')->get();
+
+        return response()->json($templates);
+    }
+
+    public function storeCardTemplate(Request $request)
+    {
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'template_key' => 'nullable|string|max:255|unique:card_templates,template_key',
+            'description' => 'nullable|string',
+            'thumbnail' => 'nullable|string|max:255',
+            'html' => 'nullable|string',
+        ]);
+
+        if (empty($data['template_key'])) {
+            $data['template_key'] = Str::slug($data['name']);
+        }
+
+        $template = CardTemplate::create($data);
+
+        return response()->json($template, 201);
+    }
+
     public function updateStatus(Request $request, $id)
     {
         $user = User::findOrFail($id);
-        $user->status = $request->status; 
+        $user->status = $request->status;
         $user->save();
 
         return response()->json(['message' => 'Status updated successfully']);
