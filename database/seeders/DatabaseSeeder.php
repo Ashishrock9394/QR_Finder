@@ -13,6 +13,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(CardTemplateSeeder::class);
+
         User::create([
             'name' => 'Ashish Kumar',
             'mobile' => '9198552556',

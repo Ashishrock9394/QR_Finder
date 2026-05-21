@@ -14,6 +14,9 @@ const MyCard = () => {
     const [showForm, setShowForm] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editingCardId, setEditingCardId] = useState(null);
+    const [showPreview, setShowPreview] = useState(false);
+    const [previewData, setPreviewData] = useState(null);
+    const [isPreviewLoading, setIsPreviewLoading] = useState(false);
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
@@ -54,9 +57,10 @@ const MyCard = () => {
             setTemplates(cardTemplates);
 
             if (!formData.template_id && cardTemplates.length) {
+                const defaultTemplate = cardTemplates.find((template) => template.template_key === 'modern_minimal') || cardTemplates[0];
                 setFormData((prev) => ({
                     ...prev,
-                    template_id: cardTemplates[0].id,
+                    template_id: defaultTemplate.id,
                 }));
             }
         } catch (error) {
@@ -109,7 +113,7 @@ const MyCard = () => {
     }, [templates, formData.template_id]);
 
     const defaultTemplate = useMemo(() => {
-        return templates.length > 0 ? templates[0] : null;
+        return templates.find((template) => template.template_key === 'modern_minimal') || (templates.length > 0 ? templates[0] : null);
     }, [templates]);
 
     const renderTemplatePreview = useMemo(() => {
@@ -134,6 +138,10 @@ const MyCard = () => {
     }, [selectedTemplate, defaultTemplate, formData, previewQrDataUrl]);
 
     const selectedCardTemplateHtml = useMemo(() => {
+        if (!selectedCard) {
+            return null;
+        }
+
         const template = selectedCard?.template?.html ? selectedCard.template : defaultTemplate;
 
         if (!template?.html) {
@@ -141,11 +149,11 @@ const MyCard = () => {
         }
 
         const values = {
-            name: selectedCard.name,
+            name: selectedCard.name || 'Your Name',
             designation: selectedCard.designation || 'Your Designation',
             company_name: selectedCard.company_name || template.name || 'Company Name',
-            mobile: selectedCard.mobile,
-            email: selectedCard.email,
+            mobile: selectedCard.mobile || 'N/A',
+            email: selectedCard.email || 'email@example.com',
             website: selectedCard.website || 'https://example.com',
             address: selectedCard.address || '123 Main Street, Cityville',
             qr_image: selectedCard.qr_image ? '<img src="/storage/' + selectedCard.qr_image + '" style="width:140px;height:140px;object-fit:contain;border-radius:12px;" alt="QR Code" />' : '<div style="width:140px;height:140px;background:#f0f0f0;border-radius:12px; height:140px;width:140px;"></div>',
@@ -153,6 +161,33 @@ const MyCard = () => {
 
         return template.html.replace(/{{\s*(\w+)\s*}}/g, (match, key) => values[key] || '');
     }, [selectedCard, defaultTemplate]);
+
+    const generatePreview = async (e) => {
+        e.preventDefault();
+        setIsPreviewLoading(true);
+
+        const data = new FormData();
+        Object.keys(formData).forEach(key => {
+            if (formData[key] !== null) data.append(key, formData[key]);
+        });
+
+        if (!formData.template_id && defaultTemplate) {
+            data.append('template_id', defaultTemplate.id);
+        }
+
+        try {
+            const response = await axios.post('/api/v-cards/preview', data, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            setPreviewData(response.data);
+            setShowPreview(true);
+        } catch (error) {
+            console.error('Error generating preview:', error);
+            alert('Failed to generate preview. Please check your data.');
+        } finally {
+            setIsPreviewLoading(false);
+        }
+    };
 
     const paidCards = useMemo(() => cards.filter((card) => card.payment_status === 'paid'), [cards]);
     const pendingCards = useMemo(() => cards.filter((card) => card.payment_status !== 'paid'), [cards]);
@@ -208,10 +243,12 @@ const MyCard = () => {
             setCards(prev => [response.data, ...prev]);
         }
 
-        // Reset form
+        // Reset form and modals
         setShowForm(false);
+        setShowPreview(false);
         setIsEditing(false);
         setSelectedCard(null);
+        setPreviewData(null);
         setFormData({
             name: '',
             designation: '',
@@ -610,8 +647,22 @@ const MyCard = () => {
                             >
                                 Cancel
                             </button>
-                            <button type="submit" className="btn btn-primary">
-                                {isEditing ? 'Update Card' : 'Generate QR Card'}
+                            <button 
+                                type="button" 
+                                className="btn btn-info"
+                                onClick={generatePreview}
+                                disabled={isPreviewLoading}
+                            >
+                                {isPreviewLoading ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2"></span>
+                                        Generating Preview...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="bi bi-eye me-1"></i> Preview Card
+                                    </>
+                                )}
                             </button>
                         </div>
                     </form>
@@ -787,6 +838,79 @@ const MyCard = () => {
                 </div>
             </div>
             )}
+
+        {/* Preview Modal */}
+        {showPreview && previewData && (
+            <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                <div className="modal-dialog modal-lg">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h5 className="modal-title">
+                                <i className="bi bi-eye me-2"></i>Preview Your Card
+                            </h5>
+                            <button
+                                type="button"
+                                className="btn-close"
+                                onClick={() => {
+                                    setShowPreview(false);
+                                    setPreviewData(null);
+                                }}
+                            ></button>
+                        </div>
+                        <div className="modal-body">
+                            <div
+                                style={{
+                                    width: '100%',
+                                    height: '400px',
+                                    boxShadow: '0 6px 15px rgba(0,0,0,0.1)',
+                                    borderRadius: '12px',
+                                    overflow: 'hidden',
+                                    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                                    userSelect: 'none',
+                                    cursor: 'default',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    border: '1px solid #ddd',
+                                    backgroundColor: 'white',
+                                }}
+                            >
+                                {previewData.preview_html && (
+                                    <div
+                                        style={{ width: '100%', height: '100%' }}
+                                        dangerouslySetInnerHTML={{ __html: previewData.preview_html }}
+                                    />
+                                )}
+                            </div>
+                            <div className="mt-3 p-3 bg-light rounded">
+                                <p className="text-muted mb-0">
+                                    <i className="bi bi-info-circle me-2"></i>
+                                    This is a preview of your card. Click "Generate Card" to create it officially.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => {
+                                    setShowPreview(false);
+                                    setPreviewData(null);
+                                }}
+                            >
+                                Back to Edit
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={handleSubmit}
+                            >
+                                <i className="bi bi-check-circle me-1"></i> Generate Card
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
 
         </div>
     );

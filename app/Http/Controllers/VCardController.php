@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CardTemplate;
 use App\Models\VCard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -184,5 +185,79 @@ class VCardController extends Controller
             ->get();
 
         return response()->json($vCards);
+    }
+
+    /**
+     * Preview a vCard before generating
+     */
+    public function preview(Request $request)
+    {
+        $data = $this->validateData($request);
+
+        // Get template
+        $template = null;
+        if (! empty($data['template_id'])) {
+            $template = CardTemplate::find($data['template_id']);
+        }
+
+        if (! $template) {
+            $template = CardTemplate::first();
+        }
+
+        if (! $template) {
+            return response()->json(['error' => 'No template available'], 404);
+        }
+
+        // Generate preview QR code temporarily
+        $qrCode = Str::uuid()->toString();
+        $qrFileName = "v_cards/qrs/{$qrCode}.svg";
+        $qrDirectory = storage_path('app/public/v_cards/qrs');
+        if (! file_exists($qrDirectory)) {
+            mkdir($qrDirectory, 0755, true);
+        }
+
+        // Generate QR with vCard data
+        $vCardUrl = url("/v-cards/{$qrCode}");
+        QrCode::size(300)
+            ->format('svg')
+            ->generate($vCardUrl, storage_path("app/public/{$qrFileName}"));
+
+        // Prepare preview data
+        $previewData = [
+            'template' => $template,
+            'form_data' => $data,
+            'qr_image' => asset("storage/{$qrFileName}"),
+            'preview_html' => $this->renderPreviewHtml($template, $data, asset("storage/{$qrFileName}")),
+        ];
+
+        return response()->json($previewData);
+    }
+
+    /**
+     * Render preview HTML for vCard
+     */
+    private function renderPreviewHtml($template, $data, $qrImageUrl)
+    {
+        $values = [
+            'name' => $data['name'] ?? 'Your Name',
+            'designation' => $data['designation'] ?? 'Your Designation',
+            'company_name' => $data['company_name'] ?? 'Company Name',
+            'mobile' => $data['mobile'] ?? '+1 555 123 4567',
+            'email' => $data['email'] ?? 'email@example.com',
+            'website' => $data['website'] ?? 'https://example.com',
+            'address' => $data['address'] ?? '123 Main Street, Cityville',
+            'qr_image' => '<img src="'.$qrImageUrl.'" style="width:140px;height:140px;object-fit:contain;border-radius:12px;" alt="QR Code" />',
+        ];
+
+        if (! $template->html) {
+            return '';
+        }
+
+        $html = $template->html;
+        foreach ($values as $key => $value) {
+            $html = str_replace('{{'.$key.'}}', $value, $html);
+        }
+
+        return $html;
     }
 }

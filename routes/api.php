@@ -41,6 +41,7 @@ Route::middleware(['redirect.unauth', 'auth:sanctum', SanctumTimeout::class])->g
     Route::put('/user/password', [UserController::class, 'updatePassword']);
     Route::get('/v-cards', [VCardController::class, 'index']);
     Route::post('/v-cards', [VCardController::class, 'store']);
+    Route::post('/v-cards/preview', [VCardController::class, 'preview']);
     // Route::get('/v-cards/{card}', [VCardController::class, 'show']);
     Route::put('/v-cards/{card}', [VCardController::class, 'update']);
     Route::delete('/v-cards/{card}', [VCardController::class, 'destroy']);
