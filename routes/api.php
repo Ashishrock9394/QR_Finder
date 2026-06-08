@@ -24,6 +24,7 @@ Route::get('/card-templates', [AdminController::class, 'cardTemplates']);
 Route::get('/v-cards/{card}', [VCardController::class, 'show'])->name('show.visiting.card');
 
 Route::get('/qr-codes/public/{qrCode}', [QRCodeController::class, 'getByQRCode']);
+Route::get('/qr-codes/public/view/{id}', [QRCodeController::class, 'showPublic']);
 
 // Public webhook endpoint for Razorpay (no auth)
 Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook']);

@@ -1,5 +1,5 @@
 <?php
-// app/Models/QRCode.php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class QRCode extends Model
 {
     use HasFactory;
+
     protected $table = 'qr_codes';
 
     protected $fillable = [
@@ -20,7 +21,17 @@ class QRCode extends Model
         'contact_email',
         'contact_phone',
         'address',
-        'status'
+        'status',
+        'user_image_path',
+        'item_image_path',
+        'qr_code_image_path',
+        'registration_timestamp',
+    ];
+
+    protected $casts = [
+        'registration_timestamp' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function agent()
@@ -31,5 +42,20 @@ class QRCode extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function getUserImageUrl(): ?string
+    {
+        return $this->user_image_path ? url('storage/'.$this->user_image_path) : null;
+    }
+
+    public function getItemImageUrl(): ?string
+    {
+        return $this->item_image_path ? url('storage/'.$this->item_image_path) : null;
+    }
+
+    public function getQRCodeImageUrl(): ?string
+    {
+        return $this->qr_code_image_path ? url('storage/'.$this->qr_code_image_path) : null;
     }
 }

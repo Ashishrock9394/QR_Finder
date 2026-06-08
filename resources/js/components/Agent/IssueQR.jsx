@@ -1,4 +1,3 @@
-// resources/js/components/Agent/IssueQR.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
 import Loader from '../Layout/Loader';
@@ -15,16 +14,20 @@ const IssueQR = () => {
     });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [errors, setErrors] = useState({});
 
     const handleChange = (e) => {
+        const { name, value } = e.target;
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
+            [name]: value
         });
+        if (errors[name]) {
+            setErrors({ ...errors, [name]: '' });
+        }
     };
 
     const handleScan = () => {
-        // Simulate QR code scanning
         const simulatedQR = `QR${Date.now()}${Math.random().toString(36).substr(2, 5)}`.toUpperCase();
         setFormData(prev => ({
             ...prev,
@@ -35,7 +38,7 @@ const IssueQR = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setSuccess(false);
+        setErrors({});
 
         try {
             await axios.post('/api/qr-codes', formData);
@@ -50,11 +53,14 @@ const IssueQR = () => {
                 address: ''
             });
             
-            // Reset success message after 3 seconds
             setTimeout(() => setSuccess(false), 3000);
         } catch (error) {
-            console.error('Error issuing QR code:', error);
-            alert('Error issuing QR code. Please try again.');
+            if (error.response?.data?.errors) {
+                setErrors(error.response.data.errors);
+            } else {
+                console.error('Error issuing QR code:', error);
+                alert('Error issuing QR code. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -66,15 +72,16 @@ const IssueQR = () => {
                 <div className="col-12">
                     <h2 className="fw-bold mb-4">
                         <i className="bi bi-qr-code me-2"></i>
-                        Issue QR Code
+                        Register Item with QR Code
                     </h2>
+                    <p className="text-muted mb-4">Issue a QR code for an item. The item owner will fill in their contact details and upload their photo during registration.</p>
                 </div>
             </div>
 
             {success && (
                 <div className="alert alert-success alert-dismissible fade show" role="alert">
                     <i className="bi bi-check-circle me-2"></i>
-                    QR Code issued successfully!
+                    QR Code issued successfully! The item owner can now register and add their information.
                     <button type="button" className="btn-close" onClick={() => setSuccess(false)}></button>
                 </div>
             )}
@@ -83,7 +90,7 @@ const IssueQR = () => {
                 <div className="col-lg-8">
                     <div className="card">
                         <div className="card-header">
-                            <h5 className="card-title mb-0">QR Code Information</h5>
+                            <h5 className="card-title mb-0">Basic Item Information</h5>
                         </div>
                         <div className="card-body">
                             <form onSubmit={handleSubmit}>
@@ -94,7 +101,7 @@ const IssueQR = () => {
                                             <div className="input-group">
                                                 <input 
                                                     type="text" 
-                                                    className="form-control"
+                                                    className={`form-control ${errors.qr_code ? 'is-invalid' : ''}`}
                                                     name="qr_code"
                                                     value={formData.qr_code}
                                                     onChange={handleChange}
@@ -110,6 +117,7 @@ const IssueQR = () => {
                                                     Scan QR
                                                 </button>
                                             </div>
+                                            {errors.qr_code && <div className="invalid-feedback d-block">{errors.qr_code[0]}</div>}
                                             <div className="form-text">
                                                 Scan the physical QR code to automatically populate this field
                                             </div>
@@ -120,13 +128,14 @@ const IssueQR = () => {
                                             <label className="form-label">Item Name *</label>
                                             <input 
                                                 type="text" 
-                                                className="form-control"
+                                                className={`form-control ${errors.item_name ? 'is-invalid' : ''}`}
                                                 name="item_name"
                                                 value={formData.item_name}
                                                 onChange={handleChange}
                                                 required 
                                                 placeholder="e.g., Laptop, Wallet, Keys"
                                             />
+                                            {errors.item_name && <div className="invalid-feedback d-block">{errors.item_name[0]}</div>}
                                         </div>
                                     </div>
                                 </div>
@@ -134,13 +143,14 @@ const IssueQR = () => {
                                 <div className="mb-3">
                                     <label className="form-label">Item Description</label>
                                     <textarea 
-                                        className="form-control"
+                                        className={`form-control ${errors.item_description ? 'is-invalid' : ''}`}
                                         name="item_description"
                                         value={formData.item_description}
                                         onChange={handleChange}
                                         rows="3"
                                         placeholder="Describe the item in detail..."
                                     ></textarea>
+                                    {errors.item_description && <div className="invalid-feedback d-block">{errors.item_description[0]}</div>}
                                 </div>
 
                                 <div className="row">
@@ -149,12 +159,13 @@ const IssueQR = () => {
                                             <label className="form-label">Contact Name *</label>
                                             <input 
                                                 type="text" 
-                                                className="form-control"
+                                                className={`form-control ${errors.contact_name ? 'is-invalid' : ''}`}
                                                 name="contact_name"
                                                 value={formData.contact_name}
                                                 onChange={handleChange}
                                                 required 
                                             />
+                                            {errors.contact_name && <div className="invalid-feedback d-block">{errors.contact_name[0]}</div>}
                                         </div>
                                     </div>
                                     <div className="col-md-4">
@@ -162,12 +173,13 @@ const IssueQR = () => {
                                             <label className="form-label">Contact Email *</label>
                                             <input 
                                                 type="email" 
-                                                className="form-control"
+                                                className={`form-control ${errors.contact_email ? 'is-invalid' : ''}`}
                                                 name="contact_email"
                                                 value={formData.contact_email}
                                                 onChange={handleChange}
                                                 required 
                                             />
+                                            {errors.contact_email && <div className="invalid-feedback d-block">{errors.contact_email[0]}</div>}
                                         </div>
                                     </div>
                                     <div className="col-md-4">
@@ -175,12 +187,13 @@ const IssueQR = () => {
                                             <label className="form-label">Contact Phone *</label>
                                             <input 
                                                 type="tel" 
-                                                className="form-control"
+                                                className={`form-control ${errors.contact_phone ? 'is-invalid' : ''}`}
                                                 name="contact_phone"
                                                 value={formData.contact_phone}
                                                 onChange={handleChange}
                                                 required 
                                             />
+                                            {errors.contact_phone && <div className="invalid-feedback d-block">{errors.contact_phone[0]}</div>}
                                         </div>
                                     </div>
                                 </div>
@@ -188,13 +201,14 @@ const IssueQR = () => {
                                 <div className="mb-4">
                                     <label className="form-label">Address</label>
                                     <textarea 
-                                        className="form-control"
+                                        className={`form-control ${errors.address ? 'is-invalid' : ''}`}
                                         name="address"
                                         value={formData.address}
                                         onChange={handleChange}
                                         rows="3"
                                         placeholder="Full address for item return..."
                                     ></textarea>
+                                    {errors.address && <div className="invalid-feedback d-block">{errors.address[0]}</div>}
                                 </div>
 
                                 <button 
@@ -224,37 +238,45 @@ const IssueQR = () => {
                         <div className="card-header">
                             <h5 className="card-title mb-0">
                                 <i className="bi bi-info-circle me-2"></i>
-                                Instructions
+                                About QR Registration
                             </h5>
                         </div>
                         <div className="card-body">
+                            <div className="alert alert-info" role="alert">
+                                <small>This form is for agents to issue QR codes. The item owner will register their contact info and photo separately.</small>
+                            </div>
+
                             <div className="d-flex align-items-start mb-3">
-                                <div className="bg-primary text-white rounded-circle p-2 me-3">1</div>
+                                <div className="bg-primary text-white rounded-circle p-2 me-3" style={{ minWidth: '32px', textAlign: 'center' }}>1</div>
                                 <div>
                                     <h6>Scan QR Code</h6>
                                     <p className="text-muted small mb-0">Use the scan button to read the physical QR code</p>
                                 </div>
                             </div>
                             <div className="d-flex align-items-start mb-3">
-                                <div className="bg-primary text-white rounded-circle p-2 me-3">2</div>
+                                <div className="bg-primary text-white rounded-circle p-2 me-3" style={{ minWidth: '32px', textAlign: 'center' }}>2</div>
                                 <div>
                                     <h6>Fill Item Details</h6>
-                                    <p className="text-muted small mb-0">Provide accurate information about the item</p>
+                                    <p className="text-muted small mb-0">Provide basic information about the item</p>
                                 </div>
                             </div>
                             <div className="d-flex align-items-start mb-3">
-                                <div className="bg-primary text-white rounded-circle p-2 me-3">3</div>
+                                <div className="bg-primary text-white rounded-circle p-2 me-3" style={{ minWidth: '32px', textAlign: 'center' }}>3</div>
                                 <div>
-                                    <h6>Contact Information</h6>
+                                    <h6>Add Contact Info</h6>
                                     <p className="text-muted small mb-0">Enter the owner's contact details</p>
                                 </div>
                             </div>
                             <div className="d-flex align-items-start">
-                                <div className="bg-primary text-white rounded-circle p-2 me-3">4</div>
+                                <div className="bg-primary text-white rounded-circle p-2 me-3" style={{ minWidth: '32px', textAlign: 'center' }}>4</div>
                                 <div>
                                     <h6>Submit</h6>
-                                    <p className="text-muted small mb-0">Click issue to register the QR code</p>
+                                    <p className="text-muted small mb-0">Click issue to generate the QR code</p>
                                 </div>
+                            </div>
+
+                            <div className="alert alert-warning mt-3" role="alert">
+                                <small><strong>Note:</strong> The item owner will complete their registration by adding their photo and confirming their information on the "Register Item" page.</small>
                             </div>
                         </div>
                     </div>

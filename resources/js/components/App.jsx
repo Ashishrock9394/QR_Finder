@@ -15,8 +15,10 @@ import AdminPanel from './Admin/AdminPanel';
 import UserProfile from './User/UserProfile';
 import MyItems from './User/MyItems';
 import MyCard from './User/MyCard';
+import RegisterItem from './User/RegisterItem';
 import PaymentPage from './Payment/PaymentPage';
 import CardDetailPage from './Home/CardDetailPage';
+import ViewQRCode from './Public/ViewQRCode';
 
 const App = () => {
     const { user, loading } = useAuth();
@@ -79,6 +81,12 @@ const App = () => {
                             <MyItems />
                         </ProtectedRoute>
                     } />
+
+                    <Route path="/register-item" element={
+                        <ProtectedRoute roles={['user']}>
+                            <RegisterItem />
+                        </ProtectedRoute>
+                    } />
                     
                     <Route path="/my-card" element={
                         <ProtectedRoute>
@@ -86,6 +94,8 @@ const App = () => {
                         </ProtectedRoute>
                     } />
                     
+                    <Route path="/qr-view/:id" element={<ViewQRCode />} />
+
                     <Route path="/payment/:cardId" element={
                         <ProtectedRoute>
                             <PaymentPage />
