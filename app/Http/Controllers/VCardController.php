@@ -222,6 +222,12 @@ class VCardController extends Controller
             ->format('svg')
             ->generate($vCardUrl, storage_path("app/public/{$qrFileName}"));
 
+        // If a logo file was uploaded for preview, store it temporarily in public storage
+        if ($request->hasFile('logo')) {
+            $logoPath = $request->file('logo')->store('v_cards/previews', 'public');
+            $data['logo'] = $logoPath;
+        }
+
         // Prepare preview data
         $previewData = [
             'template' => $template,
@@ -247,7 +253,13 @@ class VCardController extends Controller
             'website' => $data['website'] ?? 'https://example.com',
             'address' => $data['address'] ?? '123 Main Street, Cityville',
             'qr_image' => '<img src="'.$qrImageUrl.'" style="width:140px;height:140px;object-fit:contain;border-radius:12px;" alt="QR Code" />',
+            'company_logo' => '',
         ];
+
+        // If a logo path is provided (either from a saved card or preview upload), create an image tag
+        if (! empty($data['logo'])) {
+            $values['company_logo'] = '<img src="'.asset("storage/{$data['logo']}").'" style="max-height:80px;object-fit:contain;border-radius:6px;" alt="Logo" />';
+        }
 
         if (! $template->html) {
             return '';
