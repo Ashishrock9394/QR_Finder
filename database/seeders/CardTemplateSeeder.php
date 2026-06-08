@@ -14,6 +14,98 @@ class CardTemplateSeeder extends Seeder
     {
         $templates = [
             [
+                'name' => 'Elegant Dark',
+                'template_key' => 'elegant_dark',
+                'description' => 'Premium dark theme visiting card',
+                'thumbnail' => 'templates/elegant_dark.jpg',
+                'settings' => json_encode(['color' => '#111827', 'layout' => 'dark']),
+                'html' => <<<'HTML'
+            <div style="display:flex;height:100%;font-family:Verdana,sans-serif;background:#111827;color:white;">
+                <div style="width:65%;padding:30px;display:flex;flex-direction:column;justify-content:center;">
+                    <div style="font-size:30px;font-weight:bold;">{{name}}</div>
+                    <div style="font-size:13px;color:#9ca3af;margin-bottom:15px;">{{designation}}</div>
+                    <div style="margin-bottom:12px;">{{company_logo}}</div>
+
+                    <div style="font-size:12px;line-height:1.9;">
+                        <div>📧 {{email}}</div>
+                        <div>📱 {{mobile}}</div>
+                        <div>🌐 {{website}}</div>
+                        <div>📍 {{address}}</div>
+                    </div>
+                </div>
+
+                <div style="width:35%;background:#1f2937;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;">
+                    <div style="font-size:18px;font-weight:bold;margin-bottom:15px;">{{company_name}}</div>
+                    {{qr_image}}
+                </div>
+            </div>
+            HTML,
+            ],
+            [
+                'name' => 'Luxury Gold',
+                'template_key' => 'luxury_gold',
+                'description' => 'Luxury gold styled visiting card',
+                'thumbnail' => 'templates/luxury_gold.jpg',
+                'settings' => json_encode(['color' => '#d4af37', 'layout' => 'luxury']),
+                'html' => <<<'HTML'
+            <div style="height:100%;font-family:Georgia,serif;background:#000;color:#d4af37;padding:30px;display:flex;justify-content:space-between;align-items:center;">
+                
+                <div style="width:70%;">
+                    <div style="font-size:32px;font-weight:bold;letter-spacing:1px;">{{name}}</div>
+                    <div style="font-size:14px;margin-bottom:20px;">{{designation}}</div>
+
+                    <div style="border-top:1px solid #d4af37;padding-top:15px;font-size:11px;line-height:2;">
+                        <div>{{company_name}}</div>
+                        <div>{{email}}</div>
+                        <div>{{mobile}}</div>
+                        <div>{{website}}</div>
+                        <div>{{address}}</div>
+                    </div>
+                </div>
+
+                <div style="text-align:center;">
+                    {{qr_image}}
+                </div>
+            </div>
+            HTML,
+            ],
+            [
+                'name' => 'Modern Split',
+                'template_key' => 'modern_split',
+                'description' => 'Modern split layout with bold accent',
+                'thumbnail' => 'templates/modern_split.jpg',
+                'settings' => json_encode(['color' => '#0f766e', 'layout' => 'split']),
+                'html' => <<<'HTML'
+            <div style="display:flex;height:100%;font-family:'Segoe UI',sans-serif;">
+                
+                <div style="width:45%;background:#0f766e;color:white;padding:15px;display:flex;flex-direction:column;justify-content:space-between;">
+                    <div>
+                        <div style="font-size:22px;font-weight:bold;">{{company_logo}}</div>
+                        <div style="margin-top:10px;font-size:11px;line-height:1.8;">
+                            <div>{{website}}</div>
+                            <div>{{email}}</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        {{qr_image}}
+                    </div>
+                </div>
+
+                <div style="width:70%;background:#f8fafc;padding:30px;display:flex;flex-direction:column;justify-content:center;">
+                    <div style="font-size:22px;font-weight:bold;color:#0f172a;">{{company_logo}}</div>
+                    <div style="font-size:30px;font-weight:bold;color:#0f172a;">{{name}}</div>
+                    <div style="font-size:13px;color:#0f766e;margin-bottom:18px;font-weight:600;">{{designation}}</div>
+
+                    <div style="font-size:12px;color:#334155;line-height:2;">
+                        <div>📞 {{mobile}}</div>
+                        <div>📍 {{address}}</div>
+                    </div>
+                </div>
+            </div>
+            HTML,
+            ],
+            [
                 'name' => 'Modern Minimal',
                 'template_key' => 'modern_minimal',
                 'description' => 'Clean and minimal design with left sidebar',
@@ -24,6 +116,7 @@ class CardTemplateSeeder extends Seeder
     <div style="width: 35%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; color: white; display: flex; flex-direction: column; justify-content: center;">
         <div style="font-size: 32px; font-weight: bold; margin-bottom: 10px;">{{name}}</div>
         <div style="font-size: 14px; opacity: 0.9; margin-bottom: 20px;">{{designation}}</div>
+        <div style="margin-bottom:12px;">{{company_logo}}</div>
         <div style="border-top: 2px solid rgba(255,255,255,0.3); padding-top: 15px; font-size: 12px;">
             <div style="margin-bottom: 8px;">📧 {{email}}</div>
             <div style="margin-bottom: 8px;">📱 {{mobile}}</div>
@@ -54,7 +147,8 @@ HTML,
 <div style="display: flex; height: 100%; font-family: Arial, sans-serif; background: white;">
     <div style="width: 100%; padding: 25px;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div style="flex: 1;">
+                <div style="flex: 1;">
+                <div style="margin-bottom:10px;">{{company_logo}}</div>
                 <div style="font-size: 28px; font-weight: bold; color: #003d82; margin-bottom: 5px;">{{name}}</div>
                 <div style="font-size: 13px; color: #666; margin-bottom: 15px; font-weight: 500;">{{designation}}</div>
                 <div style="font-size: 11px; color: #003d82; font-weight: bold; margin-bottom: 12px;">{{company_name}}</div>

@@ -132,6 +132,7 @@ const MyCard = () => {
             website: formData.website || 'https://example.com',
             address: formData.address || '123 Main Street, Cityville',
             qr_image: previewQrDataUrl ? `<img src="${previewQrDataUrl}" style="width:140px;height:140px;object-fit:contain;border-radius:12px;" alt="QR Code" />` : '<div style="width:140px;height:140px;background:#f0f0f0;border-radius:12px; height:140px;width:140px;"></div>',
+            company_logo: existingFiles.logo ? `<img src="${existingFiles.logo}" style="max-height:80px;object-fit:contain;border-radius:6px;" alt="Logo" />` : (formData.logo ? `<img src="${URL.createObjectURL(formData.logo)}" style="max-height:80px;object-fit:contain;border-radius:6px;" alt="Logo" />` : ''),
         };
 
         return template.html.replace(/{{\s*(\w+)\s*}}/g, (match, key) => values[key] || '');
@@ -157,6 +158,7 @@ const MyCard = () => {
             website: selectedCard.website || 'https://example.com',
             address: selectedCard.address || '123 Main Street, Cityville',
             qr_image: selectedCard.qr_image ? '<img src="/storage/' + selectedCard.qr_image + '" style="width:140px;height:140px;object-fit:contain;border-radius:12px;" alt="QR Code" />' : '<div style="width:140px;height:140px;background:#f0f0f0;border-radius:12px; height:140px;width:140px;"></div>',
+            company_logo: selectedCard.logo ? '<img src="/storage/' + selectedCard.logo + '" style="max-height:80px;object-fit:contain;border-radius:6px;" alt="Logo" />' : '',
         };
 
         return template.html.replace(/{{\s*(\w+)\s*}}/g, (match, key) => values[key] || '');
@@ -164,6 +166,13 @@ const MyCard = () => {
 
     const generatePreview = async (e) => {
         e.preventDefault();
+
+        const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+        if (!formData.name.trim() || !formData.mobile.trim() || !formData.email.trim() || !emailValid) {
+            alert('Please fill in Name, Mobile, and a valid Email before generating a preview.');
+            return;
+        }
+
         setIsPreviewLoading(true);
 
         const data = new FormData();
@@ -176,14 +185,13 @@ const MyCard = () => {
         }
 
         try {
-            const response = await axios.post('/api/v-cards/preview', data, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
+            const response = await axios.post('/api/v-cards/preview', data);
             setPreviewData(response.data);
             setShowPreview(true);
         } catch (error) {
-            console.error('Error generating preview:', error);
-            alert('Failed to generate preview. Please check your data.');
+            console.error('Error generating preview:', error.response?.data || error);
+            const message = error.response?.data?.message || error.response?.data?.error || 'Failed to generate preview. Please check your data.';
+            alert(message);
         } finally {
             setIsPreviewLoading(false);
         }
@@ -232,14 +240,10 @@ const MyCard = () => {
 
         if (isEditing && editingCardId) {
             data.append('_method', 'PUT');
-            response = await axios.post(`/api/v-cards/${editingCardId}`, data, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            });
+            response = await axios.post(`/api/v-cards/${editingCardId}`, data);
             setCards(prev => prev.map(c => (c.id === editingCardId ? response.data : c)));
         } else {
-            response = await axios.post('/api/v-cards', data, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            });
+            response = await axios.post('/api/v-cards', data);
             setCards(prev => [response.data, ...prev]);
         }
 
@@ -485,7 +489,7 @@ const MyCard = () => {
         {/* Create/Edit Modal */}
         {showForm && (
             <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-            <div className="modal-dialog modal-lg">
+            <div className="modal-dialog modal-xl">
                 <div className="modal-content">
                 <div className="modal-header">
                     <h5 className="modal-title">{isEditing ? 'Edit Visiting Card' : 'Create Visiting Card'}</h5>
