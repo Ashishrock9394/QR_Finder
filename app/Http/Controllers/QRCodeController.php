@@ -59,9 +59,12 @@ class QRCodeController extends Controller
             \Log::error('QR Code generation error: '.$e->getMessage());
         }
 
+        $user = Auth::user();
+
         $qrCode = QRCode::create([
             'qr_code' => $validated['qr_code'],
-            'agent_id' => Auth::id(),
+            'agent_id' => $user->isAgent() ? Auth::id() : null,
+            'user_id' => $user->isUser() ? Auth::id() : null,
             'item_name' => $validated['item_name'],
             'item_description' => $validated['item_description'] ?? null,
             'contact_name' => $validated['contact_name'],
