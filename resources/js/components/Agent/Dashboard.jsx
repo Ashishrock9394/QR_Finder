@@ -179,39 +179,43 @@ const Dashboard = () => {
                             <div className="card-header bg-primary text-white">
                                 <h5 className="card-title mb-0">
                                     <i className="bi bi-qr-code me-2"></i>
-                                    My QR Codes
+                                    My Items
                                 </h5>
                             </div>
                             <div className="card-body">
                                 {myQRCodes.length === 0 ? (
                                     <div className="text-center py-5">
-                                        <i className="bi bi-qr-code display-4 text-muted"></i>
-                                        <p className="text-muted mt-3">No QR codes created yet</p>
-                                        <a href="/qr-codes/create" className="btn btn-primary btn-sm">
-                                            <i className="bi bi-plus-circle me-2"></i>Create QR Code
+                                        <i className="bi bi-box-seam display-4 text-muted"></i>
+                                        <p className="text-muted mt-3">No items registered yet</p>
+                                        <a href="/register-item" className="btn btn-primary btn-sm">
+                                            <i className="bi bi-plus-circle me-2"></i>Register Item
                                         </a>
                                     </div>
                                 ) : (
                                     <div className="list-group">
-                                        {myQRCodes.map(qr => (
-                                            <div key={qr.id} className="list-group-item">
-                                                <div className="d-flex justify-content-between align-items-start">
-                                                    <div>
-                                                        <h6 className="mb-1">{qr.name || 'Unnamed QR Code'}</h6>
-                                                        <small className="text-muted">
-                                                            <code>{qr.qr_code || qr.code}</code>
+                                        {myQRCodes.map(item => (
+                                            <div key={item.id} className="list-group-item">
+                                                <div className="d-flex align-items-center gap-3">
+                                                    <div className="flex-grow-1">
+                                                        <h6 className="mb-1">{item.item_name || 'Unnamed item'}</h6>
+                                                        <small className="text-muted d-block">
+                                                            {item.category || 'Uncategorized'}{item.item_description ? ` · ${item.item_description}` : ''}
                                                         </small>
-                                                        <br />
                                                         <small className="text-muted">
-                                                            Created: {new Date(qr.created_at).toLocaleDateString()}
+                                                            Registered: {new Date(item.created_at).toLocaleDateString()}
                                                         </small>
                                                     </div>
-                                                    <span className={`badge ${
-                                                        qr.status === 'active' ? 'bg-success' :
-                                                        qr.status === 'inactive' ? 'bg-secondary' : 'bg-warning'
-                                                    }`}>
-                                                        {qr.status || 'Active'}
-                                                    </span>
+                                                    {item.qr_code_image_path && (
+                                                        <a href={`/qr-view/${encodeURIComponent(item.qr_code)}`} aria-label={`Open ${item.item_name} details`}>
+                                                            <img
+                                                                src={item.qr_code_image_path.startsWith('http') ? item.qr_code_image_path : `/storage/${item.qr_code_image_path}`}
+                                                                alt={`QR code for ${item.item_name}`}
+                                                                width="76"
+                                                                height="76"
+                                                                className="border rounded p-1 bg-white"
+                                                            />
+                                                        </a>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -219,8 +223,8 @@ const Dashboard = () => {
                                 )}
                             </div>
                             <div className="card-footer bg-light">
-                                <a href="/qr-codes" className="btn btn-outline-primary btn-sm w-100">
-                                    View All QR Codes
+                                <a href="/my-items" className="btn btn-outline-primary btn-sm w-100">
+                                    View All My Items
                                 </a>
                             </div>
                         </div>

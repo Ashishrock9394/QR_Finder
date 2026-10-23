@@ -31,13 +31,12 @@ const Footer = () => {
                             <li><Link to="/" className="text-light text-decoration-none">Home</Link></li>
                             <li><Link to="/about" className="text-light text-decoration-none">About</Link></li>
                             <li><Link to="/contact" className="text-light text-decoration-none">Contact</Link></li>
-                            <li><Link to="/login" className="text-light text-decoration-none">Login</Link></li>
-                        </ul>
+                            </ul>
                     </div>
                     <div className="col-lg-3 mb-4">
                         <h6 className="fw-bold">Services</h6>
                         <ul className="list-unstyled">
-                            <li><a href="#" className="text-light text-decoration-none">Item Registration</a></li>
+                            <li><a href="/my-items" className="text-light text-decoration-none">Item Registration</a></li>
                             <li><a href="#" className="text-light text-decoration-none">QR Code Generation</a></li>
                             <li><a href="#" className="text-light text-decoration-none">Agent Network</a></li>
                             <li><a href="#" className="text-light text-decoration-none">Recovery Services</a></li>

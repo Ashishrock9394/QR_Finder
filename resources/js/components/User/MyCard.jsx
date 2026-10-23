@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import QRCode from 'qrcode';
+import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import Loader from '../Layout/Loader';
 
@@ -33,6 +34,13 @@ const MyCard = () => {
     });
     const [existingFiles, setExistingFiles] = useState({ logo: null, photo: null });
     const [previewQrDataUrl, setPreviewQrDataUrl] = useState('');
+    const [previewLogoUrl, setPreviewLogoUrl] = useState('');
+    const [cardPreviewScale, setCardPreviewScale] = useState(1);
+    const cardFrameRef = useRef(null);
+    const formPreviewFrameRef = useRef(null);
+    const previewModalFrameRef = useRef(null);
+    const [formPreviewScale, setFormPreviewScale] = useState(1);
+    const [previewModalScale, setPreviewModalScale] = useState(1);
 
     useEffect(() => {
         fetchCards();
@@ -69,18 +77,84 @@ const MyCard = () => {
     };
 
     useEffect(() => {
+        if (typeof File === 'undefined' || !(formData.logo instanceof File)) {
+            setPreviewLogoUrl('');
+
+            return undefined;
+        }
+
+        const logoUrl = URL.createObjectURL(formData.logo);
+        setPreviewLogoUrl(logoUrl);
+
+        return () => URL.revokeObjectURL(logoUrl);
+    }, [formData.logo]);
+
+    useEffect(() => {
         const generatePreviewQr = async () => {
             const text = formData.email || formData.mobile || 'QR Preview';
             try {
                 const dataUrl = await QRCode.toDataURL(text, { width: 140 });
                 setPreviewQrDataUrl(dataUrl);
             } catch (error) {
+                console.error('Error generating card preview QR code:', error);
                 setPreviewQrDataUrl('');
             }
         };
 
         generatePreviewQr();
     }, [formData.email, formData.mobile]);
+
+    useEffect(() => {
+        const frame = cardFrameRef.current;
+        if (!selectedCard || showForm || !frame) {
+            return;
+        }
+
+        const updateScale = () => {
+            setCardPreviewScale(Math.min(1, frame.clientWidth / 700));
+        };
+
+        updateScale();
+        const observer = new ResizeObserver(updateScale);
+        observer.observe(frame);
+
+        return () => observer.disconnect();
+    }, [selectedCard, showForm]);
+
+    useEffect(() => {
+        const frame = formPreviewFrameRef.current;
+        if (!showForm || !frame) {
+            return;
+        }
+
+        const updateScale = () => {
+            setFormPreviewScale(Math.min(1, frame.clientWidth / 700));
+        };
+
+        updateScale();
+        const observer = new ResizeObserver(updateScale);
+        observer.observe(frame);
+
+        return () => observer.disconnect();
+    }, [showForm]);
+
+    useEffect(() => {
+        const frame = previewModalFrameRef.current;
+        if (!showPreview || !frame) {
+            return;
+        }
+
+        const updateScale = () => {
+            setPreviewModalScale(Math.min(1, frame.clientWidth / 700));
+        };
+
+        updateScale();
+        const observer = new ResizeObserver(updateScale);
+        observer.observe(frame);
+
+        return () => observer.disconnect();
+    }, [showPreview]);
+
     const downloadCardPDF = () => {
         const input = document.getElementById('card-to-download');
         if (!input) return;
@@ -89,12 +163,12 @@ const MyCard = () => {
             const imgData = canvas.toDataURL('image/png');
 
             const pdf = new jsPDF({
-            orientation: 'landscape',
-            unit: 'px',
-            format: [canvas.width, canvas.height]
+                orientation: 'landscape',
+                unit: 'cm',
+                format: [8.9, 5.1]
             });
 
-            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+            pdf.addImage(imgData, 'PNG', 0, 0, 8.9, 5.1);
             pdf.save(`${selectedCard.name}_VisitingCard.pdf`);
         });
     };
@@ -132,11 +206,15 @@ const MyCard = () => {
             website: formData.website || 'https://example.com',
             address: formData.address || '123 Main Street, Cityville',
             qr_image: previewQrDataUrl ? `<img src="${previewQrDataUrl}" style="width:140px;height:140px;object-fit:contain;border-radius:12px;" alt="QR Code" />` : '<div style="width:140px;height:140px;background:#f0f0f0;border-radius:12px; height:140px;width:140px;"></div>',
-            company_logo: existingFiles.logo ? `<img src="${existingFiles.logo}" style="max-height:80px;object-fit:contain;border-radius:6px;" alt="Logo" />` : (formData.logo ? `<img src="${URL.createObjectURL(formData.logo)}" style="max-height:80px;object-fit:contain;border-radius:6px;" alt="Logo" />` : ''),
+            company_logo: previewLogoUrl
+                ? `<img src="${previewLogoUrl}" style="max-height:80px;object-fit:contain;border-radius:6px;" alt="Logo" />`
+                : existingFiles.logo
+                    ? `<img src="${existingFiles.logo}" style="max-height:80px;object-fit:contain;border-radius:6px;" alt="Logo" />`
+                    : '',
         };
 
         return template.html.replace(/{{\s*(\w+)\s*}}/g, (match, key) => values[key] || '');
-    }, [selectedTemplate, defaultTemplate, formData, previewQrDataUrl]);
+    }, [selectedTemplate, defaultTemplate, formData, previewQrDataUrl, existingFiles.logo, previewLogoUrl]);
 
     const selectedCardTemplateHtml = useMemo(() => {
         if (!selectedCard) {
@@ -169,7 +247,11 @@ const MyCard = () => {
 
         const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
         if (!formData.name.trim() || !formData.mobile.trim() || !formData.email.trim() || !emailValid) {
-            alert('Please fill in Name, Mobile, and a valid Email before generating a preview.');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Check required details',
+                text: 'Please enter your name, mobile number, and a valid email before previewing the card.',
+            });
             return;
         }
 
@@ -185,13 +267,28 @@ const MyCard = () => {
         }
 
         try {
-            const response = await axios.post('/api/v-cards/preview', data);
+            const qrDataUrl = await QRCode.toDataURL(formData.email || formData.mobile || 'QR Preview', { width: 140 });
+            setPreviewQrDataUrl(qrDataUrl);
+
+            const response = await axios.post('/api/v-cards/preview', data, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
             setPreviewData(response.data);
             setShowPreview(true);
         } catch (error) {
             console.error('Error generating preview:', error.response?.data || error);
-            const message = error.response?.data?.message || error.response?.data?.error || 'Failed to generate preview. Please check your data.';
-            alert(message);
+            const validationErrors = error.response?.data?.errors;
+            const message = validationErrors
+                ? Object.values(validationErrors).flat().join('\n')
+                : error.response?.data?.message || error.response?.data?.error || 'Failed to generate preview. Please check your data.';
+
+            await Swal.fire({
+                icon: 'error',
+                title: 'Unable to generate preview',
+                text: message,
+            });
         } finally {
             setIsPreviewLoading(false);
         }
@@ -236,14 +333,20 @@ const MyCard = () => {
             data.append('template_id', defaultTemplate.id);
         }
 
+        const uploadConfig = {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        };
+
         let response;
 
         if (isEditing && editingCardId) {
             data.append('_method', 'PUT');
-            response = await axios.post(`/api/v-cards/${editingCardId}`, data);
+            response = await axios.post(`/api/v-cards/${editingCardId}`, data, uploadConfig);
             setCards(prev => prev.map(c => (c.id === editingCardId ? response.data : c)));
         } else {
-            response = await axios.post('/api/v-cards', data);
+            response = await axios.post('/api/v-cards', data, uploadConfig);
             setCards(prev => [response.data, ...prev]);
         }
 
@@ -268,6 +371,15 @@ const MyCard = () => {
 
         } catch (error) {
         console.error('Error saving card:', error);
+        const validationErrors = error.response?.data?.errors;
+        const message = validationErrors
+            ? Object.values(validationErrors).flat().join('\n')
+            : error.response?.data?.message || error.response?.data?.error || 'Unable to save your card. Please try again.';
+        await Swal.fire({
+            icon: 'error',
+            title: 'Unable to save card',
+            text: message,
+        });
         }
     };
 
@@ -488,19 +600,36 @@ const MyCard = () => {
 
         {/* Create/Edit Modal */}
         {showForm && (
-            <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-            <div className="modal-dialog modal-xl">
-                <div className="modal-content">
-                <div className="modal-header">
-                    <h5 className="modal-title">{isEditing ? 'Edit Visiting Card' : 'Create Visiting Card'}</h5>
-                    <button type="button" className="btn-close" onClick={() => setShowForm(false)}></button>
+            <div
+                className="modal fade show d-block"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="card-form-modal-title"
+                style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 1055,
+                    overflowY: 'auto',
+                    backgroundColor: 'rgba(15, 23, 42, 0.68)',
+                    backdropFilter: 'blur(4px)',
+                }}
+            >
+            <div className="modal-dialog modal-xl modal-dialog-centered" style={{ maxWidth: '1320px' }}>
+                <div className="modal-content border-0 shadow-lg overflow-hidden" style={{ borderRadius: '20px' }}>
+                <div className="modal-header border-0 px-4 px-lg-5 pt-4 pb-3">
+                    <div>
+                        <h5 id="card-form-modal-title" className="modal-title fw-bold mb-1">{isEditing ? 'Edit Visiting Card' : 'Create Visiting Card'}</h5>
+                        <div className="small text-muted">Enter your contact details and preview the print-ready design.</div>
+                    </div>
+                    <button type="button" className="btn-close" aria-label="Close" onClick={() => setShowForm(false)}></button>
                 </div>
-                <div className="modal-body">
+                <div className="modal-body px-4 px-lg-5 pt-2" style={{ maxHeight: 'calc(100vh - 170px)', overflowY: 'auto' }}>
                     <form onSubmit={handleSubmit} encType="multipart/form-data">
-                        <div className="row">
+                        <div className="row g-4">
                             <div className="col-lg-6">
-                                <div className="mb-3">
-                                    <label className="form-label">Template</label>
+                                <div className="row g-3">
+                                <div className="col-12">
+                                    <label className="form-label fw-semibold">Card design</label>
                                     <select
                                         className="form-select"
                                         name="template_id"
@@ -516,8 +645,8 @@ const MyCard = () => {
                                     </select>
                                 </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label">Name *</label>
+                                <div className="col-md-6">
+                                    <label className="form-label fw-semibold">Name *</label>
                                     <input
                                         type="text"
                                         className="form-control"
@@ -528,8 +657,8 @@ const MyCard = () => {
                                     />
                                 </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label">Designation / Title</label>
+                                <div className="col-md-6">
+                                    <label className="form-label fw-semibold">Designation / Title</label>
                                     <input
                                         type="text"
                                         className="form-control"
@@ -539,8 +668,8 @@ const MyCard = () => {
                                     />
                                 </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label">Company Name</label>
+                                <div className="col-md-6">
+                                    <label className="form-label fw-semibold">Company Name</label>
                                     <input
                                         type="text"
                                         className="form-control"
@@ -550,8 +679,8 @@ const MyCard = () => {
                                     />
                                 </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label">Mobile *</label>
+                                <div className="col-md-6">
+                                    <label className="form-label fw-semibold">Mobile *</label>
                                     <input
                                         type="text"
                                         className="form-control"
@@ -562,8 +691,8 @@ const MyCard = () => {
                                     />
                                 </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label">Email *</label>
+                                <div className="col-12">
+                                    <label className="form-label fw-semibold">Email *</label>
                                     <input
                                         type="email"
                                         className="form-control"
@@ -574,8 +703,8 @@ const MyCard = () => {
                                     />
                                 </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label">Website</label>
+                                <div className="col-12">
+                                    <label className="form-label fw-semibold">Website</label>
                                     <input
                                         type="text"
                                         className="form-control"
@@ -585,8 +714,8 @@ const MyCard = () => {
                                     />
                                 </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label">Address</label>
+                                <div className="col-12">
+                                    <label className="form-label fw-semibold">Address</label>
                                     <textarea
                                         className="form-control"
                                         name="address"
@@ -596,11 +725,11 @@ const MyCard = () => {
                                     ></textarea>
                                 </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label">Logo (optional)</label>
+                                <div className="col-md-6">
+                                    <label className="form-label fw-semibold">Logo <span className="text-muted fw-normal">(optional)</span></label>
                                     {existingFiles.logo && (
                                         <div className="mb-2">
-                                            <img src={existingFiles.logo} alt="Logo" style={{ maxHeight: '70px' }} />
+                                            <img src={existingFiles.logo} alt="Logo" style={{ maxHeight: '48px', maxWidth: '100%', objectFit: 'contain' }} />
                                         </div>
                                     )}
                                     <input
@@ -611,14 +740,14 @@ const MyCard = () => {
                                     />
                                 </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label">Photo (optional)</label>
+                                <div className="col-md-6">
+                                    <label className="form-label fw-semibold">Photo <span className="text-muted fw-normal">(optional)</span></label>
                                     {existingFiles.photo && (
                                         <div className="mb-2">
                                             <img
                                                 src={existingFiles.photo}
                                                 alt="Photo"
-                                                style={{ maxHeight: '70px', borderRadius: '50%' }}
+                                                style={{ maxHeight: '48px', maxWidth: '48px', borderRadius: '50%', objectFit: 'cover' }}
                                             />
                                         </div>
                                     )}
@@ -629,21 +758,54 @@ const MyCard = () => {
                                         onChange={handleInputChange}
                                     />
                                 </div>
+                                </div>
                             </div>
 
                             <div className="col-lg-6">
-                                <div className="border rounded p-3 h-100">
-                                    <h5 className="mb-3">Template Preview</h5>
+                                <div className="h-100 p-3 p-lg-4 rounded-4" style={{ background: '#f1f5f9', border: '1px solid #e2e8f0' }}>
+                                    <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
+                                        <div>
+                                            <h6 className="fw-bold mb-1">Live preview</h6>
+                                            <div className="small text-muted">Print size: 8.9 × 5.1 cm</div>
+                                        </div>
+                                        <span className="badge rounded-pill text-bg-light border">Landscape</span>
+                                    </div>
                                     <div
-                                        className="template-preview"
-                                        style={{ minHeight: '520px', overflow: 'auto' }}
-                                        dangerouslySetInnerHTML={{ __html: renderTemplatePreview }}
-                                    />
+                                        ref={formPreviewFrameRef}
+                                        style={{
+                                            position: 'relative',
+                                            width: '100%',
+                                            aspectRatio: '700 / 401',
+                                            overflow: 'hidden',
+                                            borderRadius: '12px',
+                                            background: '#fff',
+                                            boxShadow: '0 8px 24px rgba(15, 23, 42, 0.12)',
+                                        }}
+                                    >
+                                        <div
+                                            className="template-preview"
+                                            style={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                width: '700px',
+                                                height: '401px',
+                                                overflow: 'hidden',
+                                                transform: `scale(${formPreviewScale})`,
+                                                transformOrigin: 'top left',
+                                            }}
+                                            dangerouslySetInnerHTML={{ __html: renderTemplatePreview }}
+                                        />
+                                    </div>
+                                    <div className="d-flex align-items-start gap-2 mt-3 small text-muted">
+                                        <i className="bi bi-info-circle mt-1"></i>
+                                        <span>The preview scales to fit this panel. Your print dimensions stay fixed.</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="d-flex justify-content-end gap-2 mt-3">
+                        <div className="d-flex flex-column-reverse flex-sm-row justify-content-end gap-2 mt-4 pt-3 border-top">
                             <button
                                 type="button"
                                 className="btn btn-secondary"
@@ -678,164 +840,127 @@ const MyCard = () => {
         )}
 
         {/* Card Detail Modal */}
-            {selectedCard && (
+            {selectedCard && !showForm && (
             <div
                 className="modal fade show d-block"
-                style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="card-detail-modal-title"
+                style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 1055,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '16px',
+                    backgroundColor: 'rgba(15, 23, 42, 0.68)',
+                    backdropFilter: 'blur(4px)',
+                    overflowY: 'auto',
+                }}
             >
-                <div className="modal-dialog modal-lg">
-                <div className="modal-content p-3">
-                    <div className="modal-header">
-                    <h5 className="modal-title">Visiting Card</h5>
-                    <button
-                        type="button"
-                        className="btn-close"
-                        onClick={() => setSelectedCard(null)}
-                    ></button>
+                <div className="modal-dialog m-0 w-100" style={{ maxWidth: '760px' }}>
+                <div className="modal-content border-0 shadow-lg overflow-hidden" style={{ borderRadius: '20px' }}>
+                    <div className="modal-header border-0 px-4 pt-4 pb-3">
+                        <div>
+                            <h5 id="card-detail-modal-title" className="modal-title fw-bold mb-1">Visiting Card</h5>
+                            <div className="small text-muted">Print size: 8.9 × 5.1 cm</div>
+                        </div>
+                        <button
+                            type="button"
+                            className="btn-close"
+                            aria-label="Close"
+                            onClick={() => setSelectedCard(null)}
+                        ></button>
                     </div>
                     <div
                         id="card-to-download"
-                        className="modal-body my-2"
+                        ref={cardFrameRef}
                         style={{
-                            width: '700px',
-                            height: '400px',
-                            boxShadow: '0 6px 15px rgba(0,0,0,0.1)',
-                            borderRadius: '12px',
+                            position: 'relative',
+                            width: 'min(100%, 700px)',
+                            aspectRatio: '700 / 401',
                             overflow: 'hidden',
-                            margin: 'auto',
-                            fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-                            userSelect: 'none',
-                            cursor: 'default',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            border: '1px solid #ddd',
+                            margin: '8px auto 20px',
+                            backgroundColor: '#fff',
+                            boxShadow: '0 12px 32px rgba(15, 23, 42, 0.16)',
                         }}
                     >
-                        {selectedCardTemplateHtml ? (
-                            <div
-                                className="template-preview"
-                                style={{ width: '100%', minHeight: '360px' }}
-                                dangerouslySetInnerHTML={{ __html: selectedCardTemplateHtml }}
-                            />
-                        ) : (
-                            <>
-                                {/* Top section: brown background */}
+                        <div
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '700px',
+                                height: '401px',
+                                overflow: 'hidden',
+                                transform: `scale(${cardPreviewScale})`,
+                                transformOrigin: 'top left',
+                                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                                userSelect: 'none',
+                            }}
+                        >
+                            {selectedCardTemplateHtml ? (
+                                <div
+                                    className="template-preview"
+                                    style={{ width: '700px', height: '401px', overflow: 'hidden' }}
+                                    dangerouslySetInnerHTML={{ __html: selectedCardTemplateHtml }}
+                                />
+                            ) : (
+                                <>
                                 <div
                                     style={{
-                                        backgroundColor: '#a87e69', // brown color
-                                        height: '120px',
-                                        padding: '1rem 2rem',
-                                        color: 'white',
-                                        fontWeight: '700',
-                                        fontSize: '1.7rem',
+                                        height: '401px',
+                                        boxSizing: 'border-box',
                                         display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '1rem',
+                                        flexDirection: 'column',
+                                        background: '#f8fafc',
                                     }}
                                 >
-                                    {/* Logo or placeholder */}
-                                    {selectedCard.logo ? (
-                                        <img
-                                            src={`/storage/${selectedCard.logo}`}
-                                            alt="Logo"
-                                            style={{
-                                                height: '90px',
-                                                width: 'auto',
-                                                borderRadius: '8px',
-                                                objectFit: 'contain',
-                                            }}
-                                        />
-                                    ) : (
-                                        <div style={{ height: '90px', width: '90px' }} />
-                                    )}
-                                    <div>{selectedCard.company_name || 'Your Company'}</div>
-                                </div>
-
-                                {/* Bottom section: white background with info & QR */}
-                                <div
-                                    style={{
-                                        flexGrow: 1,
-                                        backgroundColor: 'white',
-                                        padding: '2rem 3rem',
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center',
-                                    }}
-                                >
-                                    {/* Left info */}
-                                    <div style={{ maxWidth: '60%' }}>
-                                        <p style={{ margin: 0, fontWeight: '700', fontSize: '1.5rem', color: '#333' }}>
-                                            {selectedCard.name}
-                                        </p>
-                                        <p style={{ margin: '4px 0 12px', fontWeight: '500', fontStyle: 'italic', color: '#666' }}>
-                                            {selectedCard.designation || 'N/A'}
-                                        </p>
-
-                                        <p style={{ margin: '6px 0', color: '#555', fontSize: '0.9rem' }}>
-                                            <strong>Contact:</strong> {selectedCard.mobile || 'N/A'}
-                                        </p>
-                                        <p style={{ margin: '6px 0', color: '#555', fontSize: '0.9rem' }}>
-                                            <strong>Email:</strong> {selectedCard.email || 'N/A'}
-                                        </p>
-                                        <p style={{ margin: '6px 0', color: '#555', fontSize: '0.9rem' }}>
-                                            <strong>Website:</strong> {selectedCard.website || 'N/A'}
-                                        </p>
-
-                                        {selectedCard.address && (
-                                            <p style={{ margin: '6px 0', color: '#555', fontSize: '0.9rem' }}>
-                                                <strong>Address:</strong> {selectedCard.address}
-                                            </p>
-                                        )}
+                                    <div style={{ height: '105px', boxSizing: 'border-box', padding: '15px 28px', display: 'flex', alignItems: 'center', gap: '18px', background: '#17324d', color: '#fff', borderBottom: '5px solid #21b6a8' }}>
+                                        {selectedCard.logo ? (
+                                            <img src={`/storage/${selectedCard.logo}`} alt="Company logo" style={{ maxWidth: '100px', maxHeight: '70px', objectFit: 'contain' }} />
+                                        ) : null}
+                                        <div style={{ fontSize: '17px', fontWeight: 700 }}>{selectedCard.company_name || 'Your Company'}</div>
                                     </div>
-
-                                    {/* Right QR code */}
-                                    <div
-                                        style={{
-                                            textAlign: 'center',
-                                            width: '160px',
-                                            position: 'relative',
-                                        }}
-                                    >
-                                        {selectedCard.qr_image ? (
-                                            <img
-                                                src={`/storage/${selectedCard.qr_image}`}
-                                                alt="QR Code"
-                                                style={{
-                                                    width: '140px',
-                                                    height: '140px',
-                                                    objectFit: 'contain',
-                                                }}
-                                            />
-                                        ) : (
-                                            <div
-                                                style={{
-                                                    width: '140px',
-                                                    height: '140px',
-                                                    backgroundColor: '#f0f0f0',
-                                                    borderRadius: '8px',
-                                                }}
-                                            />
-                                        )}
+                                    <div style={{ flex: 1, minHeight: 0, boxSizing: 'border-box', padding: '22px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px' }}>
+                                        <div style={{ minWidth: 0, color: '#475569', fontSize: '12px', lineHeight: 1.8 }}>
+                                            <div style={{ color: '#17324d', fontSize: '26px', lineHeight: 1.15, fontWeight: 700 }}>{selectedCard.name}</div>
+                                            <div style={{ color: '#12877f', fontSize: '13px', marginBottom: '12px' }}>{selectedCard.designation || ' '}</div>
+                                            <div>{selectedCard.mobile}</div>
+                                            <div>{selectedCard.email}</div>
+                                            {selectedCard.website && <div>{selectedCard.website}</div>}
+                                            {selectedCard.address && <div>{selectedCard.address}</div>}
+                                        </div>
+                                        <div style={{ flex: '0 0 155px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '12px', background: '#fff', border: '1px solid #dce9e7', borderRadius: '14px' }}>
+                                            {selectedCard.qr_image ? (
+                                                <img src={`/storage/${selectedCard.qr_image}`} alt="QR Code" style={{ width: '130px', height: '130px', objectFit: 'contain' }} />
+                                            ) : (
+                                                <div style={{ width: '130px', height: '130px', background: '#f0f0f0', borderRadius: '8px' }} />
+                                            )}
+                                            <span style={{ color: '#12877f', fontSize: '9px', fontWeight: 700, letterSpacing: '1px' }}>SCAN TO CONNECT</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </>
-                        )}
+                                </>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="modal-footer">
+                    <div className="modal-footer border-0 px-4 pb-4 pt-0">
                         <button
                             type="button"
-                            className="btn btn-secondary"
+                            className="btn btn-light rounded-pill px-4"
                             onClick={() => setSelectedCard(null)}
                         >
                             Close
                         </button>
                         <button
                             type="button"
-                            className="btn btn-success"
+                            className="btn btn-primary rounded-pill px-4"
                             onClick={downloadCardPDF}
                         >
-                            <i className="bi bi-download me-1"></i> Download Card
+                            <i className="bi bi-download me-2"></i>Download print-ready PDF
                         </button>
                     </div>
                 </div>
@@ -845,11 +970,28 @@ const MyCard = () => {
 
         {/* Preview Modal */}
         {showPreview && previewData && (
-            <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                <div className="modal-dialog modal-lg">
-                    <div className="modal-content">
+            <div
+                className="modal fade show d-block"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="card-preview-modal-title"
+                style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 1060,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '16px',
+                    overflowY: 'auto',
+                    backgroundColor: 'rgba(15, 23, 42, 0.68)',
+                    backdropFilter: 'blur(4px)',
+                }}
+            >
+                <div className="modal-dialog m-0 w-100" style={{ maxWidth: '760px' }}>
+                    <div className="modal-content border-0 shadow-lg overflow-hidden" style={{ borderRadius: '20px' }}>
                         <div className="modal-header">
-                            <h5 className="modal-title">
+                            <h5 id="card-preview-modal-title" className="modal-title">
                                 <i className="bi bi-eye me-2"></i>Preview Your Card
                             </h5>
                             <button
@@ -861,27 +1003,32 @@ const MyCard = () => {
                                 }}
                             ></button>
                         </div>
-                        <div className="modal-body">
+                        <div className="modal-body p-4">
                             <div
                                 style={{
+                                    position: 'relative',
                                     width: '100%',
-                                    height: '400px',
-                                    boxShadow: '0 6px 15px rgba(0,0,0,0.1)',
-                                    borderRadius: '12px',
+                                    aspectRatio: '700 / 401',
                                     overflow: 'hidden',
-                                    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-                                    userSelect: 'none',
-                                    cursor: 'default',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    border: '1px solid #ddd',
-                                    backgroundColor: 'white',
+                                    borderRadius: '12px',
+                                    backgroundColor: '#fff',
+                                    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.12)',
                                 }}
+                                ref={previewModalFrameRef}
                             >
-                                {previewData.preview_html && (
+                                {renderTemplatePreview && (
                                     <div
-                                        style={{ width: '100%', height: '100%' }}
-                                        dangerouslySetInnerHTML={{ __html: previewData.preview_html }}
+                                        style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '700px',
+                                            height: '401px',
+                                            overflow: 'hidden',
+                                            transform: `scale(${previewModalScale})`,
+                                            transformOrigin: 'top left',
+                                        }}
+                                        dangerouslySetInnerHTML={{ __html: renderTemplatePreview }}
                                     />
                                 )}
                             </div>

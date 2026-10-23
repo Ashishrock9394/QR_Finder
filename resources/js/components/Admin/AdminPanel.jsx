@@ -678,9 +678,10 @@ const AdminPanel = () => {
                                                 <div className="card-header">
                                                     <h6 className="mb-0">Template Preview</h6>
                                                 </div>
-                                                <div className="card-body">
+                                                <div className="card-body overflow-auto">
                                                     <div
                                                         className="template-preview"
+                                                        style={{ width: '700px', height: '401px', overflow: 'hidden' }}
                                                         dangerouslySetInnerHTML={{ __html: renderTemplatePreview(templateForm.html) }}
                                                     />
                                                 </div>

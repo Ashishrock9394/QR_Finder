@@ -14,9 +14,11 @@ class RegisterQRCodeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'qr_code' => 'required|unique:qr_codes',
+            'qr_code' => 'nullable|string|max:255|unique:qr_codes,qr_code',
             'item_name' => 'required|string|max:255',
+            'category' => 'nullable|string|max:100',
             'item_description' => 'nullable|string|max:1000',
+            'emergency_message' => 'nullable|string|max:2000',
             'contact_name' => 'required|string|max:255',
             'contact_email' => 'required|email|max:255',
             'contact_phone' => 'required|string|max:20',
@@ -29,9 +31,10 @@ class RegisterQRCodeRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'qr_code.required' => 'QR code is required',
             'qr_code.unique' => 'This QR code has already been registered',
             'item_name.required' => 'Item name is required',
+            'category.max' => 'Category must not exceed 100 characters',
+            'emergency_message.max' => 'Emergency message must not exceed 2000 characters',
             'contact_name.required' => 'Contact name is required',
             'contact_email.required' => 'Contact email is required',
             'contact_email.email' => 'Contact email must be a valid email address',

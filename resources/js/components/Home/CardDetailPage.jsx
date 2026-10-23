@@ -38,10 +38,10 @@ const CardDetailPage = () => {
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF({
                 orientation: 'landscape',
-                unit: 'px',
-                format: [canvas.width, canvas.height]
+                unit: 'cm',
+                format: [8.9, 5.1]
             });
-            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+            pdf.addImage(imgData, 'PNG', 0, 0, 8.9, 5.1);
             pdf.save(`${card.name}_VisitingCard.pdf`);
         });
     };
@@ -86,7 +86,8 @@ const CardDetailPage = () => {
                 id="card-to-download"
                 style={{
                     width: '700px',
-                    minHeight: '400px',
+                    height: '401px',
+                    boxSizing: 'border-box',
                     boxShadow: '0 6px 15px rgba(0,0,0,0.1)',
                     borderRadius: '12px',
                     overflow: 'hidden',
@@ -96,7 +97,6 @@ const CardDetailPage = () => {
                     cursor: 'default',
                     display: 'flex',
                     flexDirection: 'column',
-                    border: '1px solid #ddd',
                 }}
             >
                 {card.template && card.template.html ? (

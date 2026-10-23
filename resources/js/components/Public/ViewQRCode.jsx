@@ -4,18 +4,18 @@ import axios from 'axios';
 import Loader from '../Layout/Loader';
 
 const ViewQRCode = () => {
-    const { id } = useParams();
+    const { qrCode } = useParams();
     const [qrData, setQrData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         fetchQRData();
-    }, [id]);
+    }, [qrCode]);
 
     const fetchQRData = async () => {
         try {
-            const response = await axios.get(`/api/qr-codes/public/view/${id}`);
+            const response = await axios.get(`/api/qr-codes/public/view/${encodeURIComponent(qrCode)}`);
             setQrData(response.data);
         } catch (err) {
             setError(err.response?.data?.message || 'Item not found');
@@ -79,6 +79,7 @@ const ViewQRCode = () => {
                     </div>
 
                     {/* Item Information Card */}
+                   
                     <div className="card mb-4">
                         <div className="card-header bg-primary text-white">
                             <h4 className="mb-0">
@@ -86,36 +87,93 @@ const ViewQRCode = () => {
                                 Item Information
                             </h4>
                         </div>
+
                         <div className="card-body">
-                            <div className="row">
+                            <div className="row g-4 align-items-start">
+
+                                {/* Left Column: Item Details */}
                                 <div className="col-md-6">
-                                    <h5>{qrData.item_name}</h5>
+                                    <h5 className="mb-2">{qrData.item_name}</h5>
+
+                                    {qrData.category && (
+                                        <span className="badge bg-primary mb-3">
+                                            {qrData.category}
+                                        </span>
+                                    )}
+
                                     {qrData.item_image_path && (
                                         <div className="mb-3">
                                             <img
                                                 src={`/storage/${qrData.item_image_path}`}
                                                 alt={qrData.item_name}
                                                 className="img-fluid rounded"
-                                                style={{ maxHeight: '250px', objectFit: 'cover' }}
+                                                style={{
+                                                    maxHeight: '250px',
+                                                    maxWidth: '100%',
+                                                    objectFit: 'cover',
+                                                    display: 'block'
+                                                }}
                                             />
                                         </div>
                                     )}
-                                </div>
-                                <div className="col-md-6">
-                                    {qrData.item_description && (
-                                        <div className="mb-3">
-                                            <h6 className="text-muted">Description</h6>
-                                            <p>{qrData.item_description}</p>
+
+                                    <h6 className="text-muted mb-2">Description</h6>
+
+                                    {qrData.item_description ? (
+                                        <div className="alert alert-warning mb-0">
+                                            <p className="mb-0">
+                                                {qrData.item_description}
+                                            </p>
                                         </div>
+                                    ) : (
+                                        <p className="text-muted mb-0">
+                                            No description available.
+                                        </p>
                                     )}
-                                    <div className="mb-3">
-                                        <h6 className="text-muted">QR Code</h6>
-                                        <code className="bg-light p-2 rounded">{qrData.qr_code}</code>
-                                    </div>
                                 </div>
+
+                                {/* Right Column: QR Code and Owner Message */}
+                                <div className="col-md-6 d-flex flex-column">
+                                    <h6 className="text-muted mb-3">Item QR Code</h6>
+
+                                    <div className="mb-4 d-flex justify-content-center justify-content-md-start">
+                                        {qrData.qr_code_image_path ? (
+                                            <div className="border rounded bg-white p-2">
+                                                <img
+                                                    src={`/storage/${qrData.qr_code_image_path}`}
+                                                    alt={`QR code for ${qrData.item_name}`}
+                                                    width="150"
+                                                    height="150"
+                                                    className="img-fluid"
+                                                    style={{ objectFit: 'contain' }}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <code className="bg-light p-2 rounded text-break">
+                                                {qrData.qr_code}
+                                            </code>
+                                        )}
+                                    </div>
+
+                                    <h6 className="text-muted mb-2">Message from the owner</h6>
+
+                                    {qrData.emergency_message ? (
+                                        <div className="alert alert-warning mb-0">
+                                            <p className="mb-0">
+                                                {qrData.emergency_message}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-muted mb-0">
+                                            No message available.
+                                        </p>
+                                    )}
+                                </div>
+
                             </div>
                         </div>
                     </div>
+
 
                     {/* Owner Information Card */}
                     <div className="card mb-4">

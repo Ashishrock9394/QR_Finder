@@ -33,6 +33,7 @@ Route::middleware(['redirect.unauth', 'auth:sanctum', SanctumTimeout::class])->g
     Route::get('/user', fn (Request $request) => $request->user());
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    Route::post('/qr-codes/verify', [QRCodeController::class, 'verify']);
     Route::apiResource('qr-codes', QRCodeController::class);
     Route::get('/my-qr-codes', [QRCodeController::class, 'myQRCodes']);
     Route::get('/my-vcards', [VCardController::class, 'myVCards']);

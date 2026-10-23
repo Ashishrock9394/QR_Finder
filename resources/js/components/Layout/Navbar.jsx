@@ -78,18 +78,6 @@ const Navbar = () => {
                             </Link>
                         </li>
 
-                        <li className="nav-item">
-                            <Link className="nav-link" to="/about">
-                                <i className="bi bi-info-circle me-1"></i> About
-                            </Link>
-                        </li>
-
-                        <li className="nav-item">
-                            <Link className="nav-link" to="/contact">
-                                <i className="bi bi-envelope me-1"></i> Contact
-                            </Link>
-                        </li>
-
                         {user?.role === 'agent' && (
                             <li className="nav-item">
                                 <Link className="nav-link" to="/dashboard">
@@ -132,6 +120,19 @@ const Navbar = () => {
                                 </li>
                             </>
                         )}
+
+                        <li className="nav-item">
+                            <Link className="nav-link" to="/about">
+                                <i className="bi bi-info-circle me-1"></i> About
+                            </Link>
+                        </li>
+
+                        <li className="nav-item">
+                            <Link className="nav-link" to="/contact">
+                                <i className="bi bi-envelope me-1"></i> Contact
+                            </Link>
+                        </li>
+                        
                     </ul>
                     {/* Search bar */}
                     <form
