@@ -173,7 +173,12 @@ class QRCodeController extends Controller
 
         abort_unless($qrCode, 404);
 
-        return response()->json($qrCode->load(['agent', 'user']));
+        $viewer = Auth::guard('sanctum')->user();
+
+        return response()->json([
+            ...$qrCode->load(['agent', 'user'])->toArray(),
+            'is_owner' => $viewer && $qrCode->user_id === $viewer->id,
+        ]);
     }
 
     public function myQRCodes()

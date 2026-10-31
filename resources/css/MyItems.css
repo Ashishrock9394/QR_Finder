@@ -412,6 +412,49 @@
     gap: 8px;
 }
 
+.mi-recovery-reports {
+    grid-column: 1 / -1;
+    padding: 16px;
+    border: 1px solid #e9e4e8;
+    border-radius: 9px;
+    background: #fcfafb;
+}
+
+.mi-recovery-reports h4 {
+    margin: 0 0 12px;
+    color: #302a31;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.mi-recovery-list {
+    display: grid;
+    gap: 10px;
+}
+
+.mi-recovery-entry {
+    padding: 12px;
+    border: 1px solid #eee9ed;
+    border-radius: 8px;
+    background: #fff;
+    color: #625a63;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.mi-recovery-entry strong {
+    color: #302a31;
+}
+
+.mi-recovery-entry a {
+    color: #814563;
+    text-decoration: none;
+}
+
+.mi-recovery-entry a:hover {
+    text-decoration: underline;
+}
+
 .mi-primary-button,
 .mi-outline-button,
 .mi-secondary-button,

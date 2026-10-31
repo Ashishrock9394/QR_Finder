@@ -9,6 +9,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OTPController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\QRCodeController;
+use App\Http\Controllers\RecoveryLogController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VCardController;
 use App\Http\Middleware\SanctumTimeout;
@@ -25,6 +26,8 @@ Route::get('/v-cards/{card}', [VCardController::class, 'show'])->name('show.visi
 
 Route::get('/qr-codes/public/{qrCode}', [QRCodeController::class, 'getByQRCode']);
 Route::get('/qr-codes/public/view/{id}', [QRCodeController::class, 'showPublic']);
+Route::post('/qr-codes/public/{identifier}/recovery-logs', [RecoveryLogController::class, 'store'])
+    ->middleware('throttle:10,1');
 
 // Public webhook endpoint for Razorpay (no auth)
 Route::post('/payments/webhook', [PaymentController::class, 'handleWebhook']);
@@ -36,6 +39,7 @@ Route::middleware(['redirect.unauth', 'auth:sanctum', SanctumTimeout::class])->g
     Route::post('/qr-codes/verify', [QRCodeController::class, 'verify']);
     Route::apiResource('qr-codes', QRCodeController::class);
     Route::get('/my-qr-codes', [QRCodeController::class, 'myQRCodes']);
+    Route::get('/qr-codes/{qrCode}/recovery-logs', [RecoveryLogController::class, 'index']);
     Route::get('/my-vcards', [VCardController::class, 'myVCards']);
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 

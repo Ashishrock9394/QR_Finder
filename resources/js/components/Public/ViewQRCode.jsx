@@ -8,8 +8,16 @@ const ViewQRCode = () => {
     const [qrData, setQrData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [recoveryForm, setRecoveryForm] = useState({ name: '', contact_phone: '', details: '' });
+    const [recoveryErrors, setRecoveryErrors] = useState({});
+    const [recoverySubmitting, setRecoverySubmitting] = useState(false);
+    const [recoverySubmitted, setRecoverySubmitted] = useState(false);
 
     useEffect(() => {
+        setLoading(true);
+        setError(null);
+        setRecoverySubmitted(false);
+        setRecoveryErrors({});
         fetchQRData();
     }, [qrCode]);
 
@@ -36,6 +44,32 @@ const ViewQRCode = () => {
 
     const formatDate = (date) => {
         return new Date(date).toLocaleString();
+    };
+
+    const submitRecoveryLog = async (event) => {
+        event.preventDefault();
+        setRecoverySubmitting(true);
+        setRecoveryErrors({});
+
+        try {
+            await axios.post(
+                `/api/qr-codes/public/${encodeURIComponent(qrCode)}/recovery-logs`,
+                recoveryForm
+            );
+            setRecoverySubmitted(true);
+            setRecoveryForm({ name: '', contact_phone: '', details: '' });
+        } catch (submitError) {
+            if (submitError.response?.data?.errors) {
+                setRecoveryErrors(submitError.response.data.errors);
+            } else {
+                console.error('Could not submit item recovery report:', submitError);
+                setRecoveryErrors({
+                    form: submitError.response?.data?.message || 'Could not send your recovery information. Please try again.',
+                });
+            }
+        } finally {
+            setRecoverySubmitting(false);
+        }
     };
 
     if (loading) {
@@ -305,6 +339,76 @@ const ViewQRCode = () => {
                             </div>
                         </div>
                     </div>
+
+                    {!qrData.is_owner && (
+                        <section className="card mt-4 border-primary-subtle">
+                            <div className="card-header bg-primary-subtle">
+                                <h5 className="mb-1"><i className="bi bi-arrow-return-left me-2" />Help return this item</h5>
+                                <p className="small text-muted mb-0">Share your contact details and how you found the item so the owner can get in touch.</p>
+                            </div>
+                            <div className="card-body">
+                                {recoverySubmitted ? (
+                                    <div className="alert alert-success mb-0" role="status">
+                                        <i className="bi bi-check-circle me-2" />
+                                        Thank you. Your recovery details have been shared with the owner.
+                                    </div>
+                                ) : (
+                                    <form onSubmit={submitRecoveryLog}>
+                                        {recoveryErrors.form && <div className="alert alert-danger" role="alert">{recoveryErrors.form}</div>}
+                                        <div className="row g-3">
+                                            <div className="col-md-4">
+                                                <label htmlFor="recovery-name" className="form-label">Your name *</label>
+                                                <input
+                                                    id="recovery-name"
+                                                    name="name"
+                                                    className={`form-control ${recoveryErrors.name ? 'is-invalid' : ''}`}
+                                                    value={recoveryForm.name}
+                                                    onChange={(event) => setRecoveryForm((current) => ({ ...current, name: event.target.value }))}
+                                                    maxLength={255}
+                                                    required
+                                                />
+                                                {recoveryErrors.name && <div className="invalid-feedback">{recoveryErrors.name[0]}</div>}
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label htmlFor="recovery-phone" className="form-label">Contact number *</label>
+                                                <input
+                                                    id="recovery-phone"
+                                                    name="contact_phone"
+                                                    type="tel"
+                                                    className={`form-control ${recoveryErrors.contact_phone ? 'is-invalid' : ''}`}
+                                                    value={recoveryForm.contact_phone}
+                                                    onChange={(event) => setRecoveryForm((current) => ({ ...current, contact_phone: event.target.value }))}
+                                                    maxLength={30}
+                                                    required
+                                                />
+                                                {recoveryErrors.contact_phone && <div className="invalid-feedback">{recoveryErrors.contact_phone[0]}</div>}
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label htmlFor="recovery-details" className="form-label">Where/how did you find it? *</label>
+                                                <textarea
+                                                    id="recovery-details"
+                                                    name="details"
+                                                    className={`form-control ${recoveryErrors.details ? 'is-invalid' : ''}`}
+                                                    value={recoveryForm.details}
+                                                    onChange={(event) => setRecoveryForm((current) => ({ ...current, details: event.target.value }))}
+                                                    rows="3"
+                                                    maxLength={3000}
+                                                    required
+                                                />
+                                                {recoveryErrors.details && <div className="invalid-feedback">{recoveryErrors.details[0]}</div>}
+                                            </div>
+                                            <div className="col-12 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                                <small className="text-muted"><i className="bi bi-shield-lock me-1" />Your IP address is recorded with this recovery report.</small>
+                                                <button type="submit" className="btn btn-primary" disabled={recoverySubmitting}>
+                                                    {recoverySubmitting ? 'Sending…' : 'Send recovery details'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                )}
+                            </div>
+                        </section>
+                    )}
 
                     {/* Security Notice */}
                     <div className="alert alert-warning mt-4" role="alert">

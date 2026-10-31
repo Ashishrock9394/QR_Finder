@@ -10,6 +10,10 @@ const MyItems = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [listError, setListError] = useState('');
+    const [openRecoveryItemId, setOpenRecoveryItemId] = useState(null);
+    const [recoveryLogs, setRecoveryLogs] = useState({});
+    const [recoveryLoadingId, setRecoveryLoadingId] = useState(null);
+    const [recoveryErrors, setRecoveryErrors] = useState({});
     const navigate = useNavigate();
 
     const fetchMyItems = async () => {
@@ -31,6 +35,33 @@ const MyItems = () => {
     }, []);
 
     const getStatus = (status) => `mi-status mi-status-${status || 'inactive'}`;
+
+    const toggleRecoveryLogs = async (itemId) => {
+        if (openRecoveryItemId === itemId) {
+            setOpenRecoveryItemId(null);
+            return;
+        }
+
+        setOpenRecoveryItemId(itemId);
+        if (Object.prototype.hasOwnProperty.call(recoveryLogs, itemId)) {
+            return;
+        }
+
+        setRecoveryLoadingId(itemId);
+        setRecoveryErrors((current) => ({ ...current, [itemId]: '' }));
+        try {
+            const response = await axios.get(`/api/qr-codes/${itemId}/recovery-logs`);
+            setRecoveryLogs((current) => ({ ...current, [itemId]: response.data }));
+        } catch (error) {
+            console.error('Error fetching item recovery logs:', error);
+            setRecoveryErrors((current) => ({
+                ...current,
+                [itemId]: error.response?.data?.message || 'Could not load recovery reports.',
+            }));
+        } finally {
+            setRecoveryLoadingId(null);
+        }
+    };
 
     if (loading) {
         return <Loader />;
@@ -99,7 +130,36 @@ const MyItems = () => {
                                         </a>
                                     )}
                                     <Link className="mi-outline-button" to={`/qr-view/${encodeURIComponent(item.qr_code)}`}><i className="bi bi-box-arrow-up-right" /> View details</Link>
+                                    <button type="button" className="mi-outline-button" onClick={() => toggleRecoveryLogs(item.id)}>
+                                        <i className="bi bi-geo-alt" /> Recovery reports
+                                    </button>
                                 </div>
+                                {openRecoveryItemId === item.id && (
+                                    <div className="mi-recovery-reports">
+                                        <h4><i className="bi bi-shield-check me-2" />Recovery reports for {item.item_name}</h4>
+                                        {recoveryLoadingId === item.id ? (
+                                            <p className="mb-0 text-muted small">Loading recovery reports…</p>
+                                        ) : recoveryErrors[item.id] ? (
+                                            <p className="mb-0 text-danger small" role="alert">{recoveryErrors[item.id]}</p>
+                                        ) : recoveryLogs[item.id]?.length ? (
+                                            <div className="mi-recovery-list">
+                                                {recoveryLogs[item.id].map((log) => (
+                                                    <article className="mi-recovery-entry" key={log.id}>
+                                                        <div className="d-flex flex-wrap justify-content-between gap-2">
+                                                            <strong>{log.visitor_name}</strong>
+                                                            <time className="text-muted small" dateTime={log.created_at}>{new Date(log.created_at).toLocaleString()}</time>
+                                                        </div>
+                                                        <a href={`tel:${log.visitor_phone}`} className="small">{log.visitor_phone}</a>
+                                                        <p className="mb-2 mt-2">{log.details}</p>
+                                                        <small className="text-muted">Visitor IP: {log.ip_address || 'Unavailable'}</small>
+                                                    </article>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="mb-0 text-muted small">No recovery reports submitted for this item yet.</p>
+                                        )}
+                                    </div>
+                                )}
                             </article>
                         ))}
                     </div>
